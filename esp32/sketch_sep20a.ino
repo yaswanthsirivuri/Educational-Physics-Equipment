@@ -1,8 +1,8 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 
-const char* ssid = "x";      // Replace with your WiFi SSID
-const char* password = "x";  // Replace with your WiFi password
+const char* ssid = "SPARK-B618-DEE8";      // Replace with your WiFi SSID
+const char* password = "4A201Y1QQB1";  // Replace with your WiFi password
 const char* serverUrl = "http://192.168.1.66:5000/data";  // Replace with your PC's IP, e.g., "http://192.168.1.100:5000/data"
 const int ldrPin = 34;                        // LDR ADC pin
 
