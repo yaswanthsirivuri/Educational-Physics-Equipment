@@ -113,6 +113,6 @@ async def websocket_endpoint(websocket: WebSocket):
         websocket_clients.discard(websocket)
 
 
-#start server 
-#uvicorn test_server_delete:app --host 0.0.0.0 --port 5000 --reload
-
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
