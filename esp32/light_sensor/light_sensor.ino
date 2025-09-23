@@ -28,10 +28,10 @@ void setup() {
   Serial.println(WiFi.softAPIP());  // Should print 192.168.4.1
 
   // Setup mDNS for easier access (e.g., esp32.local)
-  if (MDNS.begin("esp32")) {
-    Serial.println("mDNS started: esp32.local");
-  } else {
-    Serial.println("Error starting mDNS");
+  // Retry mDNS setup indefinitely until it starts successfully
+  while (!MDNS.begin("esp32")) {
+    Serial.println("Error starting mDNS. Retrying...");
+    delay(1000);  // Wait for 1 second before retrying
   }
 
   // Handle WebSocket events (on connect, disconnect)
@@ -46,6 +46,9 @@ void loop() {
   // Send sensor data (LDR reading) via WebSocket
   int ldrValue = analogRead(ldrPin);
   String message = String(ldrValue);
+  
+// mDNS will automatically handle DNS resolution once started
+  MDNS.update();
   
   ws.textAll(message);  // Send LDR data to all connected WebSocket clients
   delay(500); 
