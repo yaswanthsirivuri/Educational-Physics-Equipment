@@ -1,0 +1,158 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ESP32 Rotary Motion Sensor (Simulation Mode)</title>
+  <style>
+    body { font-family: sans-serif; margin: 2em; }
+    button { padding: 0.5em 1em; font-size: 1em; margin-right: 0.5em; }
+    #angle { font-size: 2em; margin-top: 1em; }
+    #diff { margin-top: 1em; font-size: 1.2em; color: darkblue; }
+    canvas { margin-top: 2em; }
+  </style>
+</head>
+<body>
+  <h1>ESP32 Rotary Motion Sensor</h1>
+  <button id="startSim">Start Simulation</button>
+  <button id="stopSim">Stop Simulation</button>
+  <button id="clearGraph">Clear Graph</button>
+  <div id="angle">Angle: 0</div>
+  <div id="diff">Δt: 0 ms, Δy: 0</div>
+  <canvas id="chart" width="600" height="300"></canvas>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+/*
+	not sure how well optimised this is, calling chart.update a lot might make it difficult if we want to have a lot of different charts
+	  */
+    let chart;
+    let chartData = { labels: [], datasets: [{ label: "Angle (°)", data: [] }] };
+
+    let firstPoint = null;
+    let secondPoint = null;
+    let startTime = null;
+    let simInterval = null;
+
+    window.onload = () => {
+      const ctx = document.getElementById("chart").getContext("2d");
+      chart = new Chart(ctx, {
+        type: "line",
+        data: chartData,
+        options: {
+          responsive: true,
+          interaction: { mode: "nearest", intersect: true },
+          plugins: {
+            tooltip: {
+              enabled: true,
+              callbacks: {
+                title: (items) => `t = ${items[0].label} ms`,
+                label: (item) => `Angle = ${item.formattedValue}°`
+              }
+            }
+          },
+          scales: {
+            x: { title: { display: true, text: "Time (ms)" } },
+            y: { title: { display: true, text: "Angle (°)" } }
+          },
+          animation: false
+        }
+      });
+
+      // Point selection for delta  NOT WORKING LOL
+      document.getElementById("chart").onclick = (evt) => {
+        const points = chart.getElementsAtEventForMode(evt, "nearest", { intersect: true }, true);
+        if (points.length) {
+          const point = points[0];
+          const t = chart.data.labels[point.index];
+          const y = chart.data.datasets[0].data[point.index];
+
+          if (!firstPoint) {
+            firstPoint = {index, t, y };
+	    highlightPoint();
+            document.getElementById("diff").textContent =
+              `First point: t=${t} ms, y=${y.toFixed(2)}°`;
+          } else {
+            secondPoint = {index, t, y };
+            highlightPoint();
+	    const dt = secondPoint.t - firstPoint.t;
+            const dy = secondPoint.y - firstPoint.y;
+            document.getElementById("diff").textContent =
+              `Δt = ${dt} ms, Δy = ${dy.toFixed(2)}°`;
+            firstPoint = null;
+            secondPoint = null;
+          }
+        }
+      };
+
+      // simulation.
+      document.getElementById("startSim").addEventListener("click", () => {
+        if (simInterval) return; 
+        startTime = performance.now();
+        let simT = 0;
+        simInterval = setInterval(() => {
+          const angle = 90 * Math.sin(simT / 20);
+          handleAngle(angle);
+          simT++;
+        }, 50);
+      });
+
+      // stop simulation
+      document.getElementById("stopSim").addEventListener("click", () => {
+        if (simInterval) {
+          clearInterval(simInterval);
+          simInterval = null;
+        }
+      });
+
+      // clear
+      document.getElementById("clearGraph").addEventListener("click", () => {
+        	chartData.labels = [];
+        	chartData.datasets[0].data = [];
+        	chart.update();
+        	firstPoint = null;
+        	secondPoint = null;
+        	document.getElementById("diff").textContent = "Δt: -- ms, Δy: --";
+      });
+    };
+
+    function handleAngle(angle) {
+      const now = performance.now();
+      const t = Math.round(now - startTime);
+
+	document.getElementById("angle").textContent =
+	"Angle: " + angle.toFixed(2) + "°";
+
+      chartData.labels.push(t);
+      chartData.datasets[0].data.push(angle);
+      if (chartData.labels.length > 200) {
+		chartData.labels.shift();
+        	chartData.datasets[0].data.shift();
+      }
+      chart.update();
+    }
+
+    function hightlightPoint() {
+	const bg = chartData.datasets[0].pointBackgroundColor;
+	const radius = chartData.datasets[0].pointRadius;
+
+	for (let i=0; i<bg.length; i++) {
+		bg[i] = 'blue';
+		radius[i] = 3;
+	}
+
+	if (firstPoint) {
+		bg[firstPoint.index] = 'green';
+		radius[firstPoint.index] = 7;
+	}
+	if (secondPoint) {
+		bg[secondPoint.index] = 'red';
+		radius[secondPoint.index] = 7;
+	}
+	
+	chart.update();
+    }
+  </script>
+</body>
+</html>
