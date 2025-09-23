@@ -68,7 +68,7 @@
         }
       });
 
-      // Point selection for delta  NOT WORKING LOL
+      // Point selection for delta  
       document.getElementById("chart").onclick = (evt) => {
         const points = chart.getElementsAtEventForMode(evt, "nearest", { intersect: true }, true);
         if (points.length) {
