@@ -40,8 +40,11 @@ def register_mdns_service(service_name: str, service_type: str, port: int, hostn
         print(f"[mDNS] Registered: {service_name} at {hostname} ({ip}:{port})")
 
     except NonUniqueNameException:
-        # mDNS already registered 
+        # mDNS already registered, re-registering due to config changes
         print(f"[mDNS] Service name conflict: {service_name} already exists!")
+
+        zeroconf.unregister_service(info)
+        zeroconf.register_service(info)
 
     # Cleanup function to unregister and close Zeroconf
     def cleanup():
