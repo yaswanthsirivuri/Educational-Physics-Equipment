@@ -28,7 +28,15 @@
 	not sure how well optimised this is, calling chart.update a lot might make it difficult if we want to have a lot of different charts
 	  */
     let chart;
-    let chartData = { labels: [], datasets: [{ label: "Angle (°)", data: [] }] };
+    let chartData = {
+	    labels: [],
+	    datasets: [{
+	    	label: "Angle (°)",
+		data: [],
+		pointBackgroundColor: [],
+		pointRadius: []
+	    }] 
+    };
 
     let firstPoint = null;
     let secondPoint = null;
@@ -69,12 +77,12 @@
           const y = chart.data.datasets[0].data[point.index];
 
           if (!firstPoint) {
-            firstPoint = {index, t, y };
+            firstPoint = {index: point.index, t, y };
 	    highlightPoint();
             document.getElementById("diff").textContent =
               `First point: t=${t} ms, y=${y.toFixed(2)}°`;
           } else {
-            secondPoint = {index, t, y };
+            secondPoint = {index: point.index, t, y };
             highlightPoint();
 	    const dt = secondPoint.t - firstPoint.t;
             const dy = secondPoint.y - firstPoint.y;
@@ -118,22 +126,29 @@
     };
 
     function handleAngle(angle) {
-      const now = performance.now();
-      const t = Math.round(now - startTime);
+	const now = performance.now();
+      	const t = Math.round(now - startTime);
 
 	document.getElementById("angle").textContent =
 	"Angle: " + angle.toFixed(2) + "°";
 
-      chartData.labels.push(t);
-      chartData.datasets[0].data.push(angle);
-      if (chartData.labels.length > 200) {
+      	chartData.labels.push(t);
+      	chartData.datasets[0].data.push(angle);
+	chartData.datasets[0].pointBackgroundColor.push("blue");	// "
+	chartData.datasets[0].pointRadius.push(3);			//defaults for dots until they are selected
+
+
+	    
+      	if (chartData.labels.length > 200) {
 		chartData.labels.shift();
         	chartData.datasets[0].data.shift();
+	      	chartData.datasets[0].pointBackgroundColor.shift();
+	      	chartData.datasets[0].pointRadius.shift();
       }
       chart.update();
     }
 
-    function hightlightPoint() {
+    function highlightPoint() {
 	const bg = chartData.datasets[0].pointBackgroundColor;
 	const radius = chartData.datasets[0].pointRadius;
 
