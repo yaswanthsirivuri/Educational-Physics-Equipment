@@ -1,6 +1,9 @@
 import socket
 
 def get_private_ip() -> str:
+    """
+        return the device's private ip address, this ip used for mDNS registration avoid manual configuration
+    """
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.settimeout(0)
 
