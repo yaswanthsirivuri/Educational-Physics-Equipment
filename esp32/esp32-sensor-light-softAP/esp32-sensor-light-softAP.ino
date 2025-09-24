@@ -2,7 +2,7 @@
   ESP32 lightsensor works on softAP network broadcast data through websocket connection
 */
 
-#include <WiFi.h>  // Note: Capital 'W'
+#include <WiFi.h>  
 #include <ESPAsyncWebServer.h>
 #include <AsyncTCP.h>
 #include <ESPmDNS.h>
