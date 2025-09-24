@@ -1,173 +1,127 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>ESP32 Rotary Motion Sensor (Simulation Mode)</title>
+  <title>ESP32 Rotary Motion Sensor</title>
+  <link rel="icon" href="data:,"> 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: sans-serif; margin: 2em; }
-    button { padding: 0.5em 1em; font-size: 1em; margin-right: 0.5em; }
-    #angle { font-size: 2em; margin-top: 1em; }
-    #diff { margin-top: 1em; font-size: 1.2em; color: darkblue; }
-    canvas { margin-top: 2em; }
+    body { font-family: sans-serif; margin: 20px; }
+    #controls { margin-bottom: 20px; }
+    button { margin-right: 10px; padding: 6px 12px; }
+    #status { margin-top: 10px; }
   </style>
 </head>
 <body>
-  <h1>ESP32 Rotary Motion Sensor</h1>
-  <button id="startSim">Start Simulation</button>
-  <button id="stopSim">Stop Simulation</button>
-  <button id="clearGraph">Clear Graph</button>
-  <div id="angle">Angle: 0</div>
-  <div id="diff">Δt: 0 ms, Δy: 0</div>
-  <canvas id="chart" width="600" height="300"></canvas>
+  <h2>ESP32 Rotary Motion Sensor</h2>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <div id="controls">
+    <button id="connectBtn">🔗 Connect to ESP32 (Live Data)</button>
+    <button id="startSimBtn" disabled>▶ Start Simulation (Disabled)</button>
+    <button id="stopSimBtn" disabled>⏹ Stop Simulation (Disabled)</button>
+    <p id="status">Status: Disconnected</p>
+  </div>
+
+  <canvas id="angleChart" width="800" height="400"></canvas>
 
   <script>
-/*
-	not sure how well optimised this is, calling chart.update a lot might make it difficult if we want to have a lot of different charts
-	  */
-    let chart;
-    let chartData = {
-	    labels: [],
-	    datasets: [{
-	    	label: "Angle (°)",
-		data: [],
-		pointBackgroundColor: [],
-		pointRadius: []
-	    }] 
-    };
-
-    let firstPoint = null;
-    let secondPoint = null;
-    let startTime = null;
-    let simInterval = null;
-
-    window.onload = () => {
-      const ctx = document.getElementById("chart").getContext("2d");
-      chart = new Chart(ctx, {
-        type: "line",
-        data: chartData,
-        options: {
-          responsive: true,
-          interaction: { mode: "nearest", intersect: true },
-          plugins: {
-            tooltip: {
-              enabled: true,
-              callbacks: {
-                title: (items) => `t = ${items[0].label} ms`,
-                label: (item) => `Angle = ${item.formattedValue}°`
-              }
-            }
-          },
-          scales: {
-            x: { title: { display: true, text: "Time (ms)" } },
-            y: { title: { display: true, text: "Angle (°)" } }
-          },
-          animation: false
+    const ctx = document.getElementById('angleChart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Angle (degrees)',
+          data: [],
+          borderColor: 'blue',
+          fill: false
+        }]
+      },
+      options: {
+        scales: {
+          x: { title: { display: true, text: 'Time (s)' } },
+          y: { title: { display: true, text: 'Angle (deg)' } }
         }
-      });
-
-      // Point selection for delta  
-      document.getElementById("chart").onclick = (evt) => {
-        const points = chart.getElementsAtEventForMode(evt, "nearest", { intersect: true }, true);
-        if (points.length) {
-          const point = points[0];
-          const t = chart.data.labels[point.index];
-          const y = chart.data.datasets[0].data[point.index];
-
-          if (!firstPoint) {
-            firstPoint = {index: point.index, t, y };
-	    highlightPoint();
-            document.getElementById("diff").textContent =
-              `First point: t=${t} ms, y=${y.toFixed(2)}°`;
-          } else {
-            secondPoint = {index: point.index, t, y };
-            highlightPoint();
-	    const dt = secondPoint.t - firstPoint.t;
-            const dy = secondPoint.y - firstPoint.y;
-            document.getElementById("diff").textContent =
-              `Δt = ${dt} ms, Δy = ${dy.toFixed(2)}°`;
-            firstPoint = null;
-            secondPoint = null;
-          }
-        }
-      };
-
-      // simulation.
-      document.getElementById("startSim").addEventListener("click", () => {
-        if (simInterval) return; 
-        startTime = performance.now();
-        let simT = 0;
-        simInterval = setInterval(() => {
-          const angle = 90 * Math.sin(simT / 20);
-          handleAngle(angle);
-          simT++;
-        }, 50);
-      });
-
-      // stop simulation
-      document.getElementById("stopSim").addEventListener("click", () => {
-        if (simInterval) {
-          clearInterval(simInterval);
-          simInterval = null;
-        }
-      });
-
-      // clear
-      document.getElementById("clearGraph").addEventListener("click", () => {
-        	chartData.labels = [];
-        	chartData.datasets[0].data = [];
-        	chart.update();
-        	firstPoint = null;
-        	secondPoint = null;
-        	document.getElementById("diff").textContent = "Δt: -- ms, Δy: --";
-      });
-    };
-
-    function handleAngle(angle) {
-	const now = performance.now();
-      	const t = Math.round(now - startTime);
-
-	document.getElementById("angle").textContent =
-	"Angle: " + angle.toFixed(2) + "°";
-
-      	chartData.labels.push(t);
-      	chartData.datasets[0].data.push(angle);
-	chartData.datasets[0].pointBackgroundColor.push("blue");	// "
-	chartData.datasets[0].pointRadius.push(3);			//defaults for dots until they are selected
-
-
-	    
-      	if (chartData.labels.length > 200) {
-		chartData.labels.shift();
-        	chartData.datasets[0].data.shift();
-	      	chartData.datasets[0].pointBackgroundColor.shift();
-	      	chartData.datasets[0].pointRadius.shift();
       }
-      chart.update();
+    });
+
+    let startTime = Date.now();
+
+    // ble live data
+    document.getElementById('connectBtn').addEventListener('click', async () => {
+      try {
+        console.log("Requesting Bluetooth device...");
+        document.getElementById('status').innerText = 'Status: Scanning...';
+        const device = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
+        });
+        console.log("Device selected:", device.name, device.id);
+        document.getElementById('status').innerText = 'Status: Device selected';
+
+        device.addEventListener('gattserverdisconnected', () => {
+          console.log("Device disconnected.");
+          document.getElementById('status').innerText = 'Status: Disconnected';
+          chart.data.labels = [];
+          chart.data.datasets[0].data = [];
+          chart.update();
+        });
+
+        console.log("Connecting to GATT server...");
+        document.getElementById('status').innerText = 'Status: Connecting...';
+        const server = await device.gatt.connect();
+
+        console.log("Getting primary service...");
+        document.getElementById('status').innerText = 'Status: Getting service...';
+        const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+
+        console.log("Getting characteristic...");
+        document.getElementById('status').innerText = 'Status: Getting characteristic...';
+        const characteristic = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
+
+        console.log("Starting notifications...");
+        document.getElementById('status').innerText = 'Status: Starting notifications...';
+        await characteristic.startNotifications();
+
+        characteristic.addEventListener('characteristicvaluechanged', (event) => {
+          const value = new TextDecoder().decode(event.target.value);
+          try {
+            const obj = JSON.parse(value);
+            const elapsed = (Date.now() - startTime) / 1000;
+            chart.data.labels.push(elapsed.toFixed(2));
+            chart.data.datasets[0].data.push(obj.angle);
+            chart.update();
+            console.log("Data:", obj);
+            document.getElementById('status').innerText = 'Status: Connected - Receiving data';
+          } catch (e) {
+            console.warn("Invalid JSON from ESP32:", value);
+          }
+        });
+
+        console.log("Connected and listening!");
+        document.getElementById('status').innerText = 'Status: Connected';
+      } catch (error) {
+        console.error("Connection failed:", error);
+        document.getElementById('status').innerText = `Status: Error - ${error}`;
+      }
+    });
+
+    // simulation 
+    let simInterval;
+    function startSimulation() {
+      let t = 0;
+      simInterval = setInterval(() => {
+        const simulatedAngle = 180 * Math.sin(t);
+        const elapsed = (Date.now() - startTime) / 1000;
+        chart.data.labels.push(elapsed.toFixed(2));
+        chart.data.datasets[0].data.push(simulatedAngle);
+        chart.update();
+        t += 0.1;
+      }, 100);
     }
+    function stopSimulation() { clearInterval(simInterval); }
 
-    function highlightPoint() {
-	const bg = chartData.datasets[0].pointBackgroundColor;
-	const radius = chartData.datasets[0].pointRadius;
-
-	for (let i=0; i<bg.length; i++) {
-		bg[i] = 'blue';
-		radius[i] = 3;
-	}
-
-	if (firstPoint) {
-		bg[firstPoint.index] = 'green';
-		radius[firstPoint.index] = 7;
-	}
-	if (secondPoint) {
-		bg[secondPoint.index] = 'red';
-		radius[secondPoint.index] = 7;
-	}
-	
-	chart.update();
-    }
+    document.getElementById('startSimBtn').addEventListener('click', startSimulation);
+    document.getElementById('stopSimBtn').addEventListener('click', stopSimulation);
   </script>
 </body>
 </html>
