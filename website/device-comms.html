@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>device comms</title>
+	<style>
+	body {
+		text-align: center;
+		padding-top: 50px;
+	}
+	#counter {
+		font-size: 48px;
+		font-weight: bold;
+		color: #2c3e50;
+	}
+	</style>
+</head>
+<body>
+	<div id="counter-serial">No serial device connected...</div>
+	<div>
+		<button id="button-serial">select serial port</button>
+	</div>
+	<div id="log-serial">No serial errors 😊</div>
+
+	<br>
+
+	<div id="counter-BLE">No BLE device connected...</div>
+	<div>
+		<button id="button-BLE">select bluetooth device</button>
+	</div>
+	<div id="log-BLE">No bluetooth errors 😊</div>
+
+	<script language="javascript" type="text/javascript" src="device-comms.js"></script>
+</body>
+</html>
