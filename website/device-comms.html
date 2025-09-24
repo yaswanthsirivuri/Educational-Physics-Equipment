@@ -17,28 +17,42 @@
 </head>
 <body>
 	<H1>Light Sensor:</H1>
+	<div id="data-light-serial">No serial device connected...</div>
+	<div>
+		<button id="button-light-serial">select serial port</button>
+	</div>
 
 	<br>
 
 	<H1>Rotary Encoder:</H1>
+	<div id="data-rotary-serial">No serial device connected...</div>
+	<div>
+		<button id="button-rotary-serial">select serial port</button>
+	</div>
 
 	<br>
 
 	<H1>Ultrasonic sensor:</H1>
-	<div id="counter-serial">No serial device connected...</div>
+	<div id="data-ultrasonic-serial">No serial device connected...</div>
 	<div>
-		<button id="button-serial">select serial port</button>
+		<button id="button-ultrasonic-serial">select serial port</button>
 	</div>
-	<div id="log-serial">No serial errors 😊</div>
 
 	<br>
 
-	<div id="counter-BLE">No BLE device connected...</div>
+	<div id="data-ultrasonic-BLE">No BLE device connected...</div>
 	<div>
-		<button id="button-BLE">select bluetooth device</button>
+		<button id="button-ultrasonic-BLE">select bluetooth device</button>
 	</div>
-	<div id="log-BLE">No bluetooth errors 😊</div>
 
+	<br>
+
+	<div id="log-serial">No serial errors 🙂</div>
+	<div id="log-BLE">No bluetooth errors 🙂</div>
+
+	<script language="javascript" type="text/javascript" src="sensor-light.js"></script>
+	<script language="javascript" type="text/javascript" src="sensor-rotary.js"></script>
+	<script language="javascript" type="text/javascript" src="sensor-ultrasonic.js"></script>
 	<script language="javascript" type="text/javascript" src="device-comms.js"></script>
 </body>
 </html>

@@ -59,7 +59,7 @@ void setup() {
 void loop() {
 	readDistance();
 
-	//writeDistanceSerial();
+	writeDistanceSerial();
 	distance.f = 36;
 	processBLE();
 
