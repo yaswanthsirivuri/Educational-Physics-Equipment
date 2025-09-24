@@ -1,4 +1,7 @@
 
+const BLE_service_UUID = "8bac7fbb-9890-4fef-8e2a-05c75fabe512";
+const BLE_characteristic_UUID = "85af4282-a704-4944-814d-5dc715d6bd67";
+
 const distanceElement = document.getElementById("data-ultrasonic-serial");
 
 // serial data sent from esp32:
@@ -8,6 +11,10 @@ const distanceElement = document.getElementById("data-ultrasonic-serial");
 
 var latestBytesSerial = new Uint8Array(16); // stores the last 16 bytes received via serial
 var serialCount = 0;
+
+function sleep(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 function latestDistanceSerial() {
 	// find last 4 consecutive 0xFFs
@@ -23,6 +30,7 @@ function latestDistanceSerial() {
 		if (serialCount >= 4) {
 			let floatBytes = latestBytesSerial.slice(i - 4, i);
 
+			// convert bytes to float
 			let view = new DataView(floatBytes.buffer);
 			let float = view.getFloat32(0);
 			return float;
@@ -67,4 +75,32 @@ async function readSerialUltrasonic() {
 
 		sleep(200);
 	}
+}
+
+function readBluetoothUltrasonic() {
+	navigator.bluetooth.requestDevice({
+		filters: [{
+			services: [BLE_service_UUID] // service UUID defined in ESP32 code
+		}]
+	})
+	.then(device => {
+		console.log("bluetooth connected to: " + device.name);
+		return device.gatt.connect();
+	})
+	.then(server => server.getPrimaryService(BLE_service_UUID))
+	.then(service => {
+		console.log("service");
+		return service.getCharacteristic(BLE_characteristic_UUID);
+	})
+	.then(characteristic => {
+		console.log("value")
+		return characteristic.readValue();
+	})
+	.then(value => {
+		let distance = value.getFloat32();
+		console.log("bt distance: " + distance);
+	})
+	.catch(error => {
+		console.error(error);
+	});
 }
