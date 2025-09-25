@@ -34,7 +34,7 @@ void loop() {
 	Serial.write(distance.b[1]);
 	Serial.write(distance.b[0]);
 
-	// search for 4x 0xFF on receiver side to know where data packet ends
+	// send 4x 0xFF so the receiver knows where data packet ends
 	Serial.write(0xFF);
 	Serial.write(0xFF);
 	Serial.write(0xFF);

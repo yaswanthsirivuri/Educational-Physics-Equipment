@@ -60,13 +60,44 @@ void loop() {
 	readDistance();
 
 	writeDistanceSerial();
-	distance.f = 36;
 	processBLE();
 
 	delay(500);
 }
 
 // SUB-FUNCTIONS //
+
+void readDistance() {
+	// send ultrasonic pulse
+	digitalWrite(trigPin, LOW);
+	delayMicroseconds(2);
+	digitalWrite(trigPin, HIGH);
+	delayMicroseconds(10);
+	digitalWrite(trigPin, LOW);
+
+	// calculate distance
+	float duration = pulseIn(echoPin, HIGH);
+	distance.f = (duration * 0.0343) / 2;
+}
+
+// SERIAL //
+
+void writeDistanceSerial() {
+	// write each byte of distance float
+	// send bytes in reverse order so it's easier to parse on the receiver end
+	Serial.write(distance.b[3]);
+	Serial.write(distance.b[2]);
+	Serial.write(distance.b[1]);
+	Serial.write(distance.b[0]);
+
+	// send 4x 0xFF so the receiver knows where data packet ends
+	Serial.write(255);
+	Serial.write(255);
+	Serial.write(255);
+	Serial.write(255);
+}
+
+// BLUETOOTH //
 
 void initBLE() {
 	BLEDevice::init("ESP32-ultrasonic");
@@ -78,15 +109,15 @@ void initBLE() {
 
 	characteristic_BLE = service->createCharacteristic(
 		CHARACTERISTIC_UUID,
-		BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_INDICATE
+		BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY | BLECharacteristic::PROPERTY_INDICATE
 	);
   // creates BLE Descriptor 0x2902: Client Characteristic Configuration Descriptor (CCCD)
   // descriptor 2902 is not required when using NimBLE as it is automatically added based on the characteristic_BLE properties
 	characteristic_BLE->addDescriptor(new BLE2902());
 	descriptor_2901 = new BLE2901(); // ddd the Characteristic User Description - 0x2901 descriptor
-  descriptor_2901->setDescription("Distance reading (mm).");
-  descriptor_2901->setAccessPermissions(ESP_GATT_PERM_READ); // enforce read only - default is Read|Write
-  characteristic_BLE->addDescriptor(descriptor_2901);
+	descriptor_2901->setDescription("Distance reading (mm).");
+	descriptor_2901->setAccessPermissions(ESP_GATT_PERM_READ); // enforce read only - default is Read|Write
+	characteristic_BLE->addDescriptor(descriptor_2901);
 
 	service->start();
 
@@ -102,47 +133,18 @@ void initBLE() {
 
 void processBLE() {
 	if (device_connected_BLE) {
-		binaryFloat reversed_bits;
-		reversed_bits.u = reverse_u32(distance.u);
-		characteristic_BLE->setValue(reversed_bits.f); // the float bits are reversed when reading via web-bluetooth javascript api
-		// todo check if this also happens via other ble readers
+		uint32_t reversed_bytes = reverse_bytes(distance.u);
+		characteristic_BLE->setValue(reversed_bytes); // bytes are reversed when reading via web-bluetooth javascript api
 		characteristic_BLE->notify();
 	}
-  // disconnecting
-  if (!device_connected_BLE && device_connected_BLE_prev) {
-    delay(500); // give the bluetooth stack the chance to get things ready
-    server_BLE->startAdvertising(); // restart advertising
-    Serial.println("start BLE advertising");
-  }
-  device_connected_BLE_prev = device_connected_BLE;
+	// disconnecting
+	if (!device_connected_BLE && device_connected_BLE_prev) {
+		delay(500); // give the bluetooth stack the chance to get things ready
+		server_BLE->startAdvertising(); // restart advertising
+		Serial.println("start BLE advertising");
+	}
+	device_connected_BLE_prev = device_connected_BLE;
 }
 
-uint8_t reverse_u8(uint8_t x) {
-	const char * reverse_u4 = "\x0\x8\x4\xC\x2\xA\x6\xE\x1\x9\x5\xD\x3\xB\x7\xF";
-	return reverse_u4[x >> 4] | (reverse_u4[x & 0x0F] << 4);
-}
-uint16_t reverse_u16(uint16_t x) { return reverse_u8(x >> 8)   | (reverse_u8(x & 0xFF) << 8); }
-uint32_t reverse_u32(uint32_t x) { return reverse_u16(x >> 16) | (reverse_u16(x & 0xFFFF) << 16); }
-
-void readDistance() {
-	digitalWrite(trigPin, LOW);
-	delayMicroseconds(2);
-	digitalWrite(trigPin, HIGH);
-	delayMicroseconds(10);
-	digitalWrite(trigPin, LOW);
-
-	float duration = pulseIn(echoPin, HIGH);
-	distance.f = (duration * 0.0343) / 2;
-}
-
-void writeDistanceSerial() {
-	Serial.write(distance.b[3]);
-	Serial.write(distance.b[2]);
-	Serial.write(distance.b[1]);
-	Serial.write(distance.b[0]);
-
-	Serial.write(255);
-	Serial.write(255);
-	Serial.write(255);
-	Serial.write(255);
-}
+uint16_t reverse_u16(uint16_t x) { return (x >> 8) | ((x & 0xFF) << 8); }
+uint32_t reverse_bytes(uint32_t x) { return reverse_u16(x >> 16) | (reverse_u16(x & 0xFFFF) << 16); }

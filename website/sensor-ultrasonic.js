@@ -2,12 +2,13 @@
 const BLE_service_UUID = "8bac7fbb-9890-4fef-8e2a-05c75fabe512";
 const BLE_characteristic_UUID = "85af4282-a704-4944-814d-5dc715d6bd67";
 
-const distanceElement = document.getElementById("data-ultrasonic-serial");
+const distanceElementSerial = document.getElementById("data-ultrasonic-serial");
+const distanceElementBLE = document.getElementById("data-ultrasonic-BLE");
 
 // serial data sent from esp32:
 // FF FF FF FF xx xx xx xx FF ...
 // └---------┘ └---------┘ └-
-// sync bytes |float distance
+// sync bytes | float distance
 
 var latestBytesSerial = new Uint8Array(16); // stores the last 16 bytes received via serial
 var serialCount = 0;
@@ -70,11 +71,17 @@ async function readSerialUltrasonic() {
 		let distance = latestDistanceSerial();
 		console.log(distance);
 		if (distance != -1) {
-			distanceElement.textContent = distance.toFixed(1) + "mm";
+			distanceElementSerial.textContent = distance.toFixed(1) + "mm";
 		}
 
 		sleep(200);
 	}
+}
+
+function onCharacteristicValueChange(event) {
+	const distance = event.target.value.getFloat32();
+	console.log("bt distance (mm) = " + distance);
+	distanceElementBLE.textContent = distance.toFixed(1) + "mm";
 }
 
 function readBluetoothUltrasonic() {
@@ -89,16 +96,14 @@ function readBluetoothUltrasonic() {
 	})
 	.then(server => server.getPrimaryService(BLE_service_UUID))
 	.then(service => {
-		console.log("service");
+		console.log("service received");
 		return service.getCharacteristic(BLE_characteristic_UUID);
 	})
+	.then(characteristic => characteristic.startNotifications())
 	.then(characteristic => {
-		console.log("value")
-		return characteristic.readValue();
-	})
-	.then(value => {
-		let distance = value.getFloat32();
-		console.log("bt distance: " + distance);
+		console.log("notifications started");
+		// call onCharacteristicValueChange() whenever this value changes
+		characteristic.addEventListener('characteristicvaluechanged', onCharacteristicValueChange);
 	})
 	.catch(error => {
 		console.error(error);
