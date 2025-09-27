@@ -57,9 +57,20 @@
 	<div id="log-serial">No serial errors 🙂</div>
 	<div id="log-BLE">No bluetooth errors 🙂</div>
 
-	<script language="javascript" type="text/javascript" src="sensor-light.js"></script>
-	<script language="javascript" type="text/javascript" src="sensor-rotary.js"></script>
-	<script language="javascript" type="text/javascript" src="sensor-ultrasonic.js"></script>
-	<script language="javascript" type="text/javascript" src="device-comms.js"></script>
+	<hr>
+	<h2>Live sensor Chart</h2>
+	<canvas id="sensorChart" width="800" height="400"></canvas>
+
+	<script src="sensor-light.js"></script>
+	<script src="sensor-rotary.js"></script>
+	<script src="sensor-ultrasonic.js"></script>
+	<script src="device-comms.js"></script>
+
+	<script src="https://cdn.jsdeliver.net/npm/chart.js"></srcipt>
+	<script src="charting.js"></script>
+
+
+
+
 </body>
 </html>

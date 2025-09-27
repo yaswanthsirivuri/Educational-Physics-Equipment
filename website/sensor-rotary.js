@@ -8,6 +8,8 @@ const ROTARY_CHARACTERISTIC_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
 const rotarySerialElement = document.getElementById("data-rotary-serial");
 const rotaryBLEElement = document.getElementById("data-rotary-BLE");
 
+let startTime = Date.now();  
+
 // rotary serial coming soon
 
 // Rotary BLE
@@ -23,6 +25,10 @@ document.getElementById("button-rotary-BLE").addEventListener("click", async () 
 
     device.addEventListener("gattserverdisconnected", () => {
       rotaryBLEElement.textContent = "Disconnected";
+      // reset chart when device disconnects
+      if (typeof resetChart === "function") {
+        resetChart();
+      }
     });
 
     console.log("Connecting to GATT server");
@@ -42,6 +48,12 @@ document.getElementById("button-rotary-BLE").addEventListener("click", async () 
       try {
         const obj = JSON.parse(value);
         rotaryBLEElement.textContent = `Angle: ${obj.angle.toFixed(2)}°, Count: ${obj.count}`;
+
+        // add to chart
+        if (typeof addData === "function") {
+          const elapsed = (Date.now() - startTime) / 1000;
+          addData(elapsed.toFixed(2), obj.angle);
+        }
       } catch (e) {
         console.warn("Invalid JSON from ESP32:", value);
       }
