@@ -45,10 +45,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const value = new TextDecoder().decode(event.target.value);
         try {
           const obj = JSON.parse(value);
-          rotaryBLEElement.textContent = `Angle: ${obj.angle.toFixed(2)}°, Count: ${obj.count}`;
+          rotaryBLEElement.textContent = `Angle: ${obj.angle.toFixed(2)} rad, Count: ${obj.count}`;
 
           if (typeof addDataToChart === "function") {
-            addDataToChart("Rotary Angle (°)", obj.angle);
+            addDataToChart("Rotary Angle (rad)", obj.angle);
           }
         } catch (e) {
           console.warn("Invalid JSON from ESP32:", value);

@@ -12,7 +12,7 @@ const chart = new Chart(ctx, {
     labels: [],
     datasets: [
       {
-        label: "Rotary Angle (°)",
+        label: "Rotary Angle (radians)",
         data: [],
         borderColor: "rgba(54, 162, 235, 1)",
         borderWidth: 2,
@@ -59,7 +59,7 @@ const chart = new Chart(ctx, {
       y1: {
         type: "linear",
         position: "left",
-        title: { display: true, text: "Angle (°)" }
+        title: { display: true, text: "Angle (rad)" }
       },
       /*
       y2: {

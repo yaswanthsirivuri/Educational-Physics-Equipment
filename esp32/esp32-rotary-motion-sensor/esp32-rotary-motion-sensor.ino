@@ -92,7 +92,7 @@ void loop() {
   static unsigned long lastNotify = 0;
   if (millis() - lastNotify >= 50) {
     lastNotify = millis();
-    float angle = (float)encoderCount * (360.0 / 2400.0);
+    float angle = (float)encoderCount * (2 * M_PI / 2400.0);
     String data = "{\"angle\":" + String(angle, 2) + ",\"count\":" + String(encoderCount) + "}";
     pCharacteristic->setValue(data.c_str());
     pCharacteristic->notify();
