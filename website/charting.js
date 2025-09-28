@@ -1,6 +1,6 @@
 
 // charting
-// one chart for all sensors
+// one chart for all sensors for now, looks terrible though so i commented it out
 
 const startTime = Date.now();
 
@@ -19,6 +19,7 @@ const chart = new Chart(ctx, {
         fill: false,
         yAxisID: "y1"
       },
+      /*
       {
         label: "Ultrasonic Distance (mm)",
         data: [],
@@ -35,10 +36,12 @@ const chart = new Chart(ctx, {
         fill: false,
         yAxisID: "y3"
       }
+      */
     ]
   },
   options: {
     responsive: true,
+    animation: false,
     interaction: {
       mode: "index",
       intersect: false
@@ -58,6 +61,7 @@ const chart = new Chart(ctx, {
         position: "left",
         title: { display: true, text: "Angle (°)" }
       },
+      /*
       y2: {
         type: "linear",
         position: "right",
@@ -70,12 +74,13 @@ const chart = new Chart(ctx, {
         title: { display: true, text: "Light" },
         grid: { drawOnChartArea: false }
       }
+      */
     }
   }
 });
 
 // function to add data to chart 
-// probably going to need to tell students to stop recording data after 1 minute otherwise the website will explode lol
+// kinda buggy but also kinda works, need to sort out the scaling and stuff
 function addDataToChart(datasetLabel, value) {
   const elapsed = (Date.now() - startTime) / 1000;
   chart.data.labels.push(elapsed.toFixed(2));

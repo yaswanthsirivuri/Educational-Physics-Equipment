@@ -41,11 +41,10 @@ void setup() {
   Serial.println("start setup");
   
   Serial.println("initializing ble...");
-  BLEDevice::init("ESP32 Rotary Motion Sensor V2");
-  BLEDevice::setEncryptionLevel(ESP_BLE_SEC_ENCRYPT);
-  BLESecurity *pSecurity = new BLESecurity();
-  pSecurity->setAuthenticationMode(ESP_LE_AUTH_BOND);
-  Serial.println("BLE device initialized with bonding");
+  BLEDevice::init("ESP32 Rotary Motion Sensor");
+  //BLEDevice::setEncryptionLevel(ESP_BLE_SEC_ENCRYPT);
+  //BLESecurity *pSecurity = new BLESecurity();
+  //pSecurity->setAuthenticationMode(ESP_LE_AUTH_BOND);
   
   pServer = BLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
