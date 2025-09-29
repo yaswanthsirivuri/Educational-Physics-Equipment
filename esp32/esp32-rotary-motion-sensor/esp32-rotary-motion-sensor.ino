@@ -96,6 +96,6 @@ void loop() {
     String data = "{\"angle\":" + String(angle, 2) + ",\"count\":" + String(encoderCount) + "}";
     pCharacteristic->setValue(data.c_str());
     pCharacteristic->notify();
-    Serial.println("Sent: " + data);
+    Serial.println(data);
   }
 }
