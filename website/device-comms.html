@@ -13,48 +13,48 @@
             font-weight: bold;
             color: #2c3e50;
         }
+        .sensor {
+            margin-bottom: 20px;
+        }
+        button {
+            margin: 5px;
+        }
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <h1>Education Physics Equipment</h1>
+    <h1>Educational Physics Equipment</h1>
     <p><a href="help.html" target="_blank">Help</a></p>
-    <h1>Light Sensor:</h1>
-    <div id="data-light-serial">No serial device connected...</div>
-    <div>
-        <button id="button-light-serial">Select Serial Port</button>
+
+    <div class="sensor" id="light">
+        <h1>Light Sensor:</h1>
+        <div id="data-light-serial">No serial device connected...</div>
+        <div>
+            <button class="button" id="button-light-serial">Select Serial Port</button>
+        </div>
     </div>
 
-    <br>
-
-    <h1>Rotary Encoder:</h1>
-    <div id="data-rotary-serial">No serial device connected...</div>
-    <div>
-        <button id="button-rotary-serial">Select Serial Port</button>
+    <div class="sensor" id="rotary">
+        <h1>Rotary Encoder:</h1>
+        <div id="data-rotary-serial">No serial device connected...</div>
+        <div id="data-rotary-BLE">No BLE device connected...</div>
+        <div>
+            <button class="button" data-pair="button-rotary-BLE" id="button-rotary-serial">Select Serial Port</button>
+            <button class="button" data-pair="button-rotary-serial" id="button-rotary-BLE">Select Bluetooth Device</button>
+        </div>
     </div>
 
-    <br>
-
-    <div id="data-rotary-BLE">No BLE device connected...</div>
-    <div>
-        <button id="button-rotary-BLE">Select Bluetooth Device</button>
+    <div class="sensor" id="ultrasonic">
+        <h1>Ultrasonic Sensor:</h1>
+        <div id="data-ultrasonic-serial">No serial device connected...</div>
+        <div id="data-ultrasonic-BLE">No BLE device connected...</div>
+        <div>
+            <button class="button" data-pair="button-ultrasonic-BLE" id="button-ultrasonic-serial">Select Serial Port</button>
+            <button class="button" data-pair="button-ultrasonic-serial" id="button-ultrasonic-BLE">Select Bluetooth Device</button>
+        </div>
     </div>
-
-    <br>
-
-    <h1>Ultrasonic Sensor:</h1>
-    <div id="data-ultrasonic-serial">No serial device connected...</div>
-    <div>
-        <button id="button-ultrasonic-serial">Select Serial Port</button>
-    </div>
-
-    <br>
-
-    <div id="data-ultrasonic-BLE">No BLE device connected...</div>
-    <div>
-        <button id="button-ultrasonic-BLE">Select Bluetooth Device</button>
-    </div>
-
-    <br>
 
     <div id="log-serial">No serial errors 🙂</div>
     <div id="log-BLE">No bluetooth errors 🙂</div>
@@ -70,5 +70,33 @@
     <script src="sensor-rotary.js"></script>
     <script src="sensor-ultrasonic.js"></script>
     <script src="device-comms.js"></script>
+    <script>
+        function focusButton(event) {
+            const clickedButton = event.target;
+            const pairId = clickedButton.getAttribute('data-pair');
+            const pairedButton = pairId ? document.getElementById(pairId) : null;
+
+            if (pairedButton) {
+                pairedButton.classList.add('hidden');
+            }
+
+            //hide the other sensors
+            const currentSensor = clickedButton.closest('.sensor');
+            if (currentSensor) {
+                document.querySelectorAll('.sensor').forEach(section => {
+                    if (section !== currentSensor) {
+                        section.classList.add('hidden');
+                    }
+                });
+            } else {
+                console.error('Current sensor section not found');
+            }
+        }
+
+        //event listeners for the buttons
+        document.querySelectorAll('.button').forEach(button => {
+            button.addEventListener('click', focusButton);
+        });
+    </script>
 </body>
 </html>
