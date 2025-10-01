@@ -1,3 +1,8 @@
+/// <reference types="web-bluetooth" />
+/// <reference types="w3c-web-serial" />
+// https://stackoverflow.com/questions/51298406/property-bluetooth-does-not-exist-on-type-navigator
+// npm install --save-dev @types/web-bluetooth
+// npm install --save-dev @types/w3c-web-serial
 
 const BLE_service_UUID = "8bac7fbb-9890-4fef-8e2a-05c75fabe512";
 const BLE_characteristic_UUID = "85af4282-a704-4944-814d-5dc715d6bd67";
@@ -15,7 +20,7 @@ const distanceElementBLE = document.getElementById("data-ultrasonic-BLE");
 var latestBytesSerial = new Uint8Array(16); // stores the last 16 bytes received via serial
 var serialCount = 0;
 
-function sleep(ms) {
+function sleep(ms: number) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
@@ -50,7 +55,7 @@ async function readSerialUltrasonic() {
 	];
 	const port = await navigator.serial.requestPort({ filters });
 	await port.open({ baudRate: 9600 });
-	const reader = port.readable.getReader();
+	const reader = port.readable!.getReader();
 
 	while (true) {
 		const { value, done } = await reader.read();
@@ -73,7 +78,7 @@ async function readSerialUltrasonic() {
 		let distance = latestDistanceSerial();
 		console.log(distance);
 		if (distance != -1) {
-			distanceElementSerial.textContent = distance.toFixed(1) + "mm";
+			distanceElementSerial!.textContent = distance.toFixed(1) + "mm";
 		}
 
 		sleep(200);
@@ -82,10 +87,11 @@ async function readSerialUltrasonic() {
 
 // BLUETOOTH //
 
-function onCharacteristicValueChange(event) {
-	const distance = event.target.value.getFloat32();
+function onCharacteristicValueChange(event: any) {
+	let target = event.target!; // as BluetoothRemoteGATTCharacteristic
+	const distance = target.value.getFloat32();
 	console.log("bt distance (mm) = " + distance);
-	distanceElementBLE.textContent = distance.toFixed(1) + "mm";
+	distanceElementBLE!.textContent = distance.toFixed(1) + "mm";
 }
 
 function readBluetoothUltrasonic() {
@@ -96,7 +102,7 @@ function readBluetoothUltrasonic() {
 	})
 	.then(device => {
 		console.log("bluetooth connected to: " + device.name);
-		return device.gatt.connect();
+		return device.gatt!.connect();
 	})
 	.then(server => server.getPrimaryService(BLE_service_UUID))
 	.then(service => {
