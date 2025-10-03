@@ -84,8 +84,6 @@ function addDataToChart(datasetLabel, value) {
 
   chart.update();
 }
-
-// make function global 
 window.addDataToChart = addDataToChart;
 
 // stop button
@@ -109,25 +107,47 @@ function resetChart() {
 }
 window.resetChart = resetChart;
 
-// Delta feature 
+
+// delta and integration features
 let selectedPoints = [];
 
 // display 
 const deltaDiv = document.createElement("div");
 deltaDiv.id = "deltaDisplay";
 deltaDiv.style.marginTop = "10px";
-deltaDiv.textContent = "Click two points on the chart to measure the change.";
+deltaDiv.textContent = "Click two points on the chart to measure delta or find area.";
 document.getElementById("chartContainer").appendChild(deltaDiv);
 
-// reset button
+// reset delta button
 const resetDeltaBtn = document.createElement("button");
 resetDeltaBtn.textContent = "Reset Delta";
 resetDeltaBtn.style.marginTop = "5px";
 resetDeltaBtn.addEventListener("click", () => {
   selectedPoints = [];
-  deltaDiv.textContent = "Click two points on the chart to measure the change.";
+  deltaDiv.textContent = "Click two points on the chart to measure delta or find area";
+  calcAreaBtn.disabled = true;
 });
 document.getElementById("chartContainer").appendChild(resetDeltaBtn);
+
+// calculate area button
+const calcAreaBtn = document.createElement("button");
+calcAreaBtn.textContent = "Calculate Area";
+calcAreaBtn.style.marginTop = "5px";
+calcAreaBtn.disabled = true; 
+document.getElementById("chartContainer").appendChild(calcAreaBtn);
+
+// calculate area 
+function integrateBetweenPoints(dataset, labels, i1, i2) {
+  let area = 0;
+  for (let i = i1; i < i2; i++) {
+    const x1 = parseFloat(labels[i]);
+    const x2 = parseFloat(labels[i + 1]);
+    const y1 = dataset.data[i];
+    const y2 = dataset.data[i + 1];
+    area += Math.abs(((y1 + y2) / 2) * (x2 - x1)); 
+  }
+  return area;
+}
 
 // handle chart clicks
 ctx.canvas.addEventListener("click", (event) => {
@@ -139,14 +159,33 @@ ctx.canvas.addEventListener("click", (event) => {
     const x = parseFloat(chart.data.labels[index]);
     const y = dataset.data[index];
 
-    selectedPoints.push({ x, y });
+    selectedPoints.push({ datasetIndex, index, x, y });
 
     if (selectedPoints.length === 2) {
-      const dx = (selectedPoints[1].x - selectedPoints[0].x).toFixed(2);
-      const dy = (selectedPoints[1].y - selectedPoints[0].y).toFixed(2);
-      deltaDiv.textContent = `ΔX (time): ${dx}s, ΔY (angle): ${dy}`;
+      const p1 = selectedPoints[0];
+      const p2 = selectedPoints[1];
+      const dx = (p2.x - p1.x).toFixed(2);
+      const dy = (p2.y - p1.y).toFixed(2);
+
+      deltaDiv.textContent = `ΔX (time): ${dx}s, ΔY (value): ${dy}`;
+      calcAreaBtn.disabled = false; // enable area button
     } else {
       deltaDiv.textContent = `Point 1: (t=${x}s, y=${y}) selected. Select another point.`;
     }
+  }
+});
+
+// area button click handler
+calcAreaBtn.addEventListener("click", () => {
+  if (selectedPoints.length === 2) {
+    const p1 = selectedPoints[0];
+    const p2 = selectedPoints[1];
+    const dataset = chart.data.datasets[p1.datasetIndex];
+    const i1 = Math.min(p1.index, p2.index);
+    const i2 = Math.max(p1.index, p2.index);
+
+    const area = integrateBetweenPoints(dataset, chart.data.labels, i1, i2).toFixed(3);
+
+    deltaDiv.textContent += `, Area ≈ ${area}`;
   }
 });
