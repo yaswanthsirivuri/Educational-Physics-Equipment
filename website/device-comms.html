@@ -56,26 +56,21 @@
         </div>
     </div>
 
-    <div id="log-serial">No serial errors 🙂</div>
-    <div id="log-BLE">No bluetooth errors 🙂</div>
 
     <hr>
 
     <h2>Live Sensor Chart</h2>
-    <canvas id="sensorChart" width="800" height="400"></canvas>
+    <div id="chartContainer">
+        <canvas id="sensorChart" width="800" height="400"></canvas>
 
-    <div>
-        <button id="stopButton">Stop Chart</button>
-        <button id="resetButton">Reset Chart</button>
+        <div>
+            <button id="stopButton">Stop Chart</button>
+            <button id="resetButton">Reset Chart</button>
+        </div>
     </div>
 
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-    <script src="charting.js"></script>
-    <script src="sensor-light.js"></script>
-    <script type="module" src="sensor-rotary.js"></script>
-    <script src="sensor-ultrasonic.js"></script>
-    <script src="device-comms.js"></script>
+    
     <script>
         function focusButton(event) {
             const clickedButton = event.target;
@@ -104,5 +99,12 @@
             button.addEventListener('click', focusButton);
         });
     </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="charting.js"></script>
+    <script src="sensor-light.js"></script>
+    <script type="module" src="sensor-rotary.js"></script>
+    <script src="sensor-ultrasonic.js"></script>
+    <script src="device-comms.js"></script>
 </body>
 </html>

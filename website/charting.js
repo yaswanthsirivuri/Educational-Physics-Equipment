@@ -85,6 +85,9 @@ function addDataToChart(datasetLabel, value) {
   chart.update();
 }
 
+// make function global 
+window.addDataToChart = addDataToChart;
+
 // stop button
 document.getElementById("stopButton").addEventListener("click", () => {
   chartActive = false;
@@ -106,5 +109,44 @@ function resetChart() {
 }
 window.resetChart = resetChart;
 
-// make function global 
-window.addDataToChart = addDataToChart;
+// Delta feature 
+let selectedPoints = [];
+
+// display 
+const deltaDiv = document.createElement("div");
+deltaDiv.id = "deltaDisplay";
+deltaDiv.style.marginTop = "10px";
+deltaDiv.textContent = "Click two points on the chart to measure the change.";
+document.getElementById("chartContainer").appendChild(deltaDiv);
+
+// reset button
+const resetDeltaBtn = document.createElement("button");
+resetDeltaBtn.textContent = "Reset Delta";
+resetDeltaBtn.style.marginTop = "5px";
+resetDeltaBtn.addEventListener("click", () => {
+  selectedPoints = [];
+  deltaDiv.textContent = "Click two points on the chart to measure the change.";
+});
+document.getElementById("chartContainer").appendChild(resetDeltaBtn);
+
+// handle chart clicks
+ctx.canvas.addEventListener("click", (event) => {
+  const points = chart.getElementsAtEventForMode(event, "nearest", { intersect: false }, true);
+
+  if (points.length > 0) {
+    const { datasetIndex, index } = points[0];
+    const dataset = chart.data.datasets[datasetIndex];
+    const x = parseFloat(chart.data.labels[index]);
+    const y = dataset.data[index];
+
+    selectedPoints.push({ x, y });
+
+    if (selectedPoints.length === 2) {
+      const dx = (selectedPoints[1].x - selectedPoints[0].x).toFixed(2);
+      const dy = (selectedPoints[1].y - selectedPoints[0].y).toFixed(2);
+      deltaDiv.textContent = `ΔX (time): ${dx}s, ΔY (angle): ${dy}`;
+    } else {
+      deltaDiv.textContent = `Point 1: (t=${x}s, y=${y}) selected. Select another point.`;
+    }
+  }
+});
