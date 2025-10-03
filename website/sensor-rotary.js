@@ -106,7 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
           rotaryBLEElement.textContent = `Angle: ${obj.angle.toFixed(2)} rad, Count: ${obj.count}`;
 
           if (typeof addDataToChart === "function") {
-            addDataToChart("Rotary Angle (rad)", obj.angle);
+            addDataToChart("Rotary Angle (radians)", obj.angle);
           }
         } catch (e) {
           console.warn("Invalid JSON from ESP32:", value);

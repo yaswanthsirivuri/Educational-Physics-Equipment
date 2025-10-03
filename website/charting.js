@@ -1,8 +1,8 @@
-
 // charting
 // one chart for all sensors for now, looks terrible though so i commented it out
 
 const startTime = Date.now();
+let chartActive = true; 
 
 // chart
 const ctx = document.getElementById("sensorChart").getContext("2d");
@@ -18,7 +18,7 @@ const chart = new Chart(ctx, {
         borderWidth: 2,
         fill: false,
         yAxisID: "y1"
-      },
+      }
       /*
       {
         label: "Ultrasonic Distance (mm)",
@@ -60,28 +60,15 @@ const chart = new Chart(ctx, {
         type: "linear",
         position: "left",
         title: { display: true, text: "Angle (rad)" }
-      },
-      /*
-      y2: {
-        type: "linear",
-        position: "right",
-        title: { display: true, text: "Distance (mm)" },
-        grid: { drawOnChartArea: false }
-      },
-      y3: {
-        type: "linear",
-        position: "right",
-        title: { display: true, text: "Light" },
-        grid: { drawOnChartArea: false }
       }
-      */
     }
   }
 });
 
-// function to add data to chart 
-// kinda buggy but also kinda works, need to sort out the scaling and stuff
+// function to add data to chart
 function addDataToChart(datasetLabel, value) {
+  if (!chartActive) return; 
+
   const elapsed = (Date.now() - startTime) / 1000;
   chart.data.labels.push(elapsed.toFixed(2));
 
@@ -97,6 +84,27 @@ function addDataToChart(datasetLabel, value) {
 
   chart.update();
 }
+
+// stop button
+document.getElementById("stopButton").addEventListener("click", () => {
+  chartActive = false;
+});
+
+// reset button
+document.getElementById("resetButton").addEventListener("click", () => {
+  chart.data.labels = [];
+  chart.data.datasets.forEach(ds => ds.data = []);
+  chart.update();
+  chartActive = true; // re-enable after reset
+});
+
+function resetChart() {
+  chart.data.labels = [];
+  chart.data.datasets.forEach(ds => ds.data = []);
+  chart.update();
+  chartActive = true;
+}
+window.resetChart = resetChart;
 
 // make function global 
 window.addDataToChart = addDataToChart;
