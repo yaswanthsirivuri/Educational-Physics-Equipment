@@ -1,15 +1,15 @@
 // charting
-// one chart for all sensors for now, looks terrible though so i commented it out
-
+// only rotary sensor compatible at the moment, will add others later
 document.addEventListener("DOMContentLoaded", () => {
   console.log("Charting.js initialized");
 
   const startTime = Date.now();
-  let chartActive = true;
+  let chartActive = false; //since there is a start button now, less chaotic 
   let angleOffset = 0;
   let lastAngle = 0;
+  let selectedPoints = [];
 
-  // chart
+  // chart 
   const ctx = document.getElementById("sensorChart").getContext("2d");
   const chart = new Chart(ctx, {
     type: "line",
@@ -24,24 +24,6 @@ document.addEventListener("DOMContentLoaded", () => {
           fill: false,
           yAxisID: "y1"
         }
-        /*
-        {
-          label: "Ultrasonic Distance (mm)",
-          data: [],
-          borderColor: "rgba(255, 99, 132, 1)",
-          borderWidth: 2,
-          fill: false,
-          yAxisID: "y2"
-        },
-        {
-          label: "Light Level",
-          data: [],
-          borderColor: "rgba(255, 206, 86, 1)",
-          borderWidth: 2,
-          fill: false,
-          yAxisID: "y3"
-        }
-      */
       ]
     },
     options: {
@@ -51,12 +33,16 @@ document.addEventListener("DOMContentLoaded", () => {
       plugins: { legend: { display: true, position: "top" } },
       scales: {
         x: { title: { display: true, text: "Time (s)" } },
-        y1: { type: "linear", position: "left", title: { display: true, text: "Angle (rad)" } }
+        y1: {
+          type: "linear",
+          position: "left",
+          title: { display: true, text: "Angle (rad)" }
+        }
       }
     }
   });
 
-  // add data to chart
+  // add data to chart 
   function addDataToChart(datasetLabel, value) {
     if (!chartActive) return;
     const elapsed = (Date.now() - startTime) / 1000;
@@ -72,7 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
     chart.update();
   }
 
-  // global hook for data 
+  // global hook for data
   window.addDataToChart = function (datasetLabel, rawValue) {
     if (datasetLabel === "Rotary Angle (radians)") {
       lastAngle = rawValue;
@@ -81,63 +67,54 @@ document.addEventListener("DOMContentLoaded", () => {
     addDataToChart(datasetLabel, rawValue);
   };
 
-  // stop button
+  // buttons
+  document.getElementById("startButton").addEventListener("click", () => {
+    chartActive = true;
+    console.log("Chart started");
+  });
+
   document.getElementById("stopButton").addEventListener("click", () => {
     chartActive = false;
+    console.log("Chart stopped");
   });
 
-  // reset chart
-  document.getElementById("resetButton").addEventListener("click", () => {
-    chart.data.labels = [];
-    chart.data.datasets.forEach(ds => (ds.data = []));
-    chart.update();
-    chartActive = true;
-  });
+  const chartContainer = document.getElementById("chartContainer");
 
-  window.resetChart = function () {
-    chart.data.labels = [];
-    chart.data.datasets.forEach(ds => (ds.data = []));
-    chart.update();
-    chartActive = true;
-  };
-
-  // reset angle button
-  const resetAngleBtn = document.createElement("button");
-  resetAngleBtn.textContent = "Reset Angle";
-  resetAngleBtn.style.marginTop = "10px";
-  resetAngleBtn.addEventListener("click", () => {
-    angleOffset = lastAngle;
-  });
-  document.getElementById("chartContainer").appendChild(resetAngleBtn);
-
-  // delta + integration
-  let selectedPoints = [];
-
+  // delta + integration 
   const deltaDiv = document.createElement("div");
   deltaDiv.id = "deltaDisplay";
   deltaDiv.style.marginTop = "10px";
-  deltaDiv.textContent = "Click two points on the chart to measure delta or find area.";
-  document.getElementById("chartContainer").appendChild(deltaDiv);
+  deltaDiv.textContent = "Click two points on the chart to measure ΔX, ΔY, gradient, and area.";
+  chartContainer.appendChild(deltaDiv);
 
-  // calculate area button
   const calcAreaBtn = document.createElement("button");
   calcAreaBtn.textContent = "Calculate Area";
   calcAreaBtn.style.marginTop = "5px";
   calcAreaBtn.disabled = true;
-  document.getElementById("chartContainer").appendChild(calcAreaBtn);
+  chartContainer.appendChild(calcAreaBtn);
 
-  // reset delta button
-  const resetDeltaBtn = document.createElement("button");
-  resetDeltaBtn.textContent = "Reset Delta";
-  resetDeltaBtn.style.marginTop = "5px";
-  resetDeltaBtn.addEventListener("click", () => {
+  // ONE RESET BUTTON TO RULE THEM ALL
+  const resetAllBtn = document.getElementById("resetButton");
+  resetAllBtn.textContent = "Reset All";
+  resetAllBtn.addEventListener("click", () => {
+    // reset the chart
+    chart.data.labels = [];
+    chart.data.datasets.forEach(ds => (ds.data = []));
+    chart.update();
+
+    // reset state
+    chartActive = false;
+    angleOffset = lastAngle;
     selectedPoints = [];
-    deltaDiv.textContent = "Click two points on the chart to measure delta or find area";
-    calcAreaBtn.disabled = true;
-  });
-  document.getElementById("chartContainer").appendChild(resetDeltaBtn);
 
-  // trapezoid rule integration
+    // reset UI
+    deltaDiv.textContent = "Chart reset. Click two points on the chart to measure ΔX, ΔY, gradient, and area.";
+    calcAreaBtn.disabled = true;
+
+    console.log("All chart states reset");
+  });
+
+  // trapezoid rule integration 
   function integrateBetweenPoints(dataset, labels, i1, i2) {
     let area = 0;
     for (let i = i1; i < i2; i++) {
@@ -150,10 +127,9 @@ document.addEventListener("DOMContentLoaded", () => {
     return area;
   }
 
-  // handle chart clicks
+  // handle chart clicks 
   ctx.canvas.addEventListener("click", (event) => {
     const points = chart.getElementsAtEventForMode(event, "nearest", { intersect: false }, true);
-
     if (points.length > 0) {
       const { datasetIndex, index } = points[0];
       const dataset = chart.data.datasets[datasetIndex];
@@ -167,8 +143,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const p2 = selectedPoints[1];
         const dx = (p2.x - p1.x).toFixed(2);
         const dy = (p2.y - p1.y).toFixed(2);
+        const gradient = (dy / dx).toFixed(3); // gradient 
 
-        deltaDiv.textContent = `ΔX (time): ${dx}s, ΔY (value): ${dy}`;
+        deltaDiv.textContent =
+          `ΔX (time): ${dx}s, ΔY (value): ${dy}, Avg Gradient: ${gradient}`;
         calcAreaBtn.disabled = false;
       } else {
         deltaDiv.textContent = `Point 1: (t=${x}s, y=${y}) selected. Select another point.`;
@@ -176,7 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // area button click handler
+  // area button click handler 
   calcAreaBtn.addEventListener("click", () => {
     if (selectedPoints.length === 2) {
       const p1 = selectedPoints[0];
@@ -190,13 +168,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ESP32 JSON handling
+  // ESP32 JSON handling 
   let buffer = "";
-
   window.handleIncomingData = function (chunk) {
     buffer += chunk;
     const lines = buffer.split("\n");
-    buffer = lines.pop(); 
+    buffer = lines.pop();
 
     for (const line of lines) {
       if (!line.trim()) continue;
