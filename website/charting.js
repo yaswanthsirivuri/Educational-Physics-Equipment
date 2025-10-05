@@ -1,13 +1,17 @@
 // charting
 // only rotary sensor compatible at the moment, will add others later
+// https://www.chartjs.org/docs/latest
+// filling modes is under area graph not line
+
 document.addEventListener("DOMContentLoaded", () => {
   console.log("Charting.js initialized");
 
   const startTime = Date.now();
-  let chartActive = false; //since there is a start button now, less chaotic 
+  let chartActive = false;
   let angleOffset = 0;
   let lastAngle = 0;
   let selectedPoints = [];
+  let areaDataset = null;
 
   // chart 
   const ctx = document.getElementById("sensorChart").getContext("2d");
@@ -22,7 +26,8 @@ document.addEventListener("DOMContentLoaded", () => {
           borderColor: "rgba(54, 162, 235, 1)",
           borderWidth: 2,
           fill: false,
-          yAxisID: "y1"
+          yAxisID: "y1",
+          pointRadius: 2
         }
       ]
     },
@@ -42,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // add data to chart 
+  // add data to chart
   function addDataToChart(datasetLabel, value) {
     if (!chartActive) return;
     const elapsed = (Date.now() - startTime) / 1000;
@@ -93,19 +98,30 @@ document.addEventListener("DOMContentLoaded", () => {
   calcAreaBtn.disabled = true;
   chartContainer.appendChild(calcAreaBtn);
 
-  // ONE RESET BUTTON TO RULE THEM ALL
+  // button to clear selection
+  const clearSelectionBtn = document.createElement("button");
+  clearSelectionBtn.textContent = "Clear Selection";
+  clearSelectionBtn.style.marginTop = "5px";
+  clearSelectionBtn.addEventListener("click", () => {
+    clearSelection();
+  });
+  chartContainer.appendChild(clearSelectionBtn);
+
+  // ONE RESET BUTTON TO RULE THEM ALL 
   const resetAllBtn = document.getElementById("resetButton");
   resetAllBtn.textContent = "Reset All";
   resetAllBtn.addEventListener("click", () => {
-    // reset the chart
+    // reset the chart 
     chart.data.labels = [];
     chart.data.datasets.forEach(ds => (ds.data = []));
+    chart.data.datasets = chart.data.datasets.filter(ds => ds.label !== "Area Fill");
     chart.update();
 
     // reset state
     chartActive = false;
     angleOffset = lastAngle;
     selectedPoints = [];
+    areaDataset = null;
 
     // reset UI
     deltaDiv.textContent = "Chart reset. Click two points on the chart to measure ΔX, ΔY, gradient, and area.";
@@ -127,10 +143,44 @@ document.addEventListener("DOMContentLoaded", () => {
     return area;
   }
 
+  // highlight selected points 
+  function highlightPoints() {
+    const mainDataset = chart.data.datasets[0];
+    const len = mainDataset.data.length;
+    // create array for the points 
+    const radii = new Array(len).fill(2);
+    selectedPoints.forEach(p => {
+      if (p.index >= 0 && p.index < len) radii[p.index] = 7;
+    });
+    mainDataset.pointRadius = radii;
+  }
+
+  // remove area dataset 
+  function removeAreaDataset() {
+    chart.data.datasets = chart.data.datasets.filter(ds => ds.label !== "Area Fill");
+    areaDataset = null;
+  }
+
+  function clearSelection() {
+    selectedPoints = [];
+    calcAreaBtn.disabled = true;
+    deltaDiv.textContent = "Selection cleared — click two points to measure ΔX, ΔY, gradient, and area.";
+    // reset points 
+    chart.data.datasets[0].pointRadius = 2;
+    // remove fill 
+    removeAreaDataset();
+    chart.update();
+  }
+
   // handle chart clicks 
   ctx.canvas.addEventListener("click", (event) => {
     const points = chart.getElementsAtEventForMode(event, "nearest", { intersect: false }, true);
     if (points.length > 0) {
+      // clear points 
+      if (selectedPoints.length >= 2) {
+        clearSelection();
+      }
+
       const { datasetIndex, index } = points[0];
       const dataset = chart.data.datasets[datasetIndex];
       const x = parseFloat(chart.data.labels[index]);
@@ -141,18 +191,60 @@ document.addEventListener("DOMContentLoaded", () => {
       if (selectedPoints.length === 2) {
         const p1 = selectedPoints[0];
         const p2 = selectedPoints[1];
+
+        if (p1.datasetIndex !== p2.datasetIndex) {
+          deltaDiv.textContent = "Both points must be from the same dataset.";
+          calcAreaBtn.disabled = true;
+          highlightPoints();
+          chart.update();
+          return;
+        }
+
         const dx = (p2.x - p1.x).toFixed(2);
         const dy = (p2.y - p1.y).toFixed(2);
-        const gradient = (dy / dx).toFixed(3); // gradient 
-
-        deltaDiv.textContent =
-          `ΔX (time): ${dx}s, ΔY (value): ${dy}, Avg Gradient: ${gradient}`;
+        const gradient = (dy / dx).toFixed(3); // gradient
+        deltaDiv.textContent = `ΔX (time): ${dx}s, ΔY (radians): ${dy}, Avg Gradient: ${gradient}`;
         calcAreaBtn.disabled = false;
       } else {
         deltaDiv.textContent = `Point 1: (t=${x}s, y=${y}) selected. Select another point.`;
       }
+
+      highlightPoints();
+      chart.update();
     }
   });
+
+  // area dataset and shade 
+  function shadeAreaBetweenPoints(p1, p2) {
+    // remove previous area 
+    removeAreaDataset();
+
+    const i1 = Math.min(p1.index, p2.index);
+    const i2 = Math.max(p1.index, p2.index);
+    const totalLen = chart.data.labels.length;
+    const mainData = chart.data.datasets[0].data;
+
+    // data array in line with chart labels 
+    const areaData = new Array(totalLen).fill(null);
+    for (let i = i1; i <= i2; i++) {
+      areaData[i] = mainData[i];
+    }
+
+    // create area dataset 
+    areaDataset = {
+      label: "Area Fill",
+      data: areaData,
+      backgroundColor: "rgba(54, 162, 235, 0.18)",
+      borderColor: "rgba(54, 162, 235, 0.0)",
+      borderWidth: 0,
+      pointRadius: 0,
+      fill: true,
+      yAxisID: "y1",
+      order: 0 
+    };
+
+    chart.data.datasets.push(areaDataset);
+  }
 
   // area button click handler 
   calcAreaBtn.addEventListener("click", () => {
@@ -165,10 +257,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const area = integrateBetweenPoints(dataset, chart.data.labels, i1, i2).toFixed(3);
       deltaDiv.textContent += `, Area ≈ ${area}`;
+
+      shadeAreaBetweenPoints(p1, p2);
+      chart.update();
     }
   });
 
-  // ESP32 JSON handling 
+  // ESP32 JSON handling
   let buffer = "";
   window.handleIncomingData = function (chunk) {
     buffer += chunk;
