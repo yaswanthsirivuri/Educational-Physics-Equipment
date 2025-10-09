@@ -56,7 +56,6 @@
         </div>
     </div>
 
-
     <hr>
 
     <h2>Live Sensor Chart</h2>
@@ -67,11 +66,14 @@
             <button id="startButton">Start Chart</button>
             <button id="stopButton">Stop Chart</button>
             <button id="resetButton">Reset Chart</button>
+            <button id="toggleModeButton">Switch to Velocity</button>
+            <button id="toggleSelectMode">Enable Point Selection</button>
+            <button id="calculateDelta">Calculate Delta</button>
+            <button id="calculateArea">Calculate Area</button>
         </div>
+        <div id="calculationResult" style="margin-top: 10px; font-weight: bold;"></div>
     </div>
 
-
-    
     <script>
         function focusButton(event) {
             const clickedButton = event.target;
@@ -102,6 +104,7 @@
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
     <script src="charting.js"></script>
     <script src="sensor-light.js"></script>
     <script type="module" src="sensor-rotary.js"></script>
