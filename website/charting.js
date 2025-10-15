@@ -12,20 +12,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const stopBtn = document.getElementById("stopButton");
   const resetBtn = document.getElementById("resetButton");
   const toggleModeBtn = document.getElementById("toggleModeButton");
-  const toggleSelectModeBtn = document.getElementById("toggleSelectMode");
   const calculateDeltaBtn = document.getElementById("calculateDelta");
   const calculateAreaBtn = document.getElementById("calculateArea");
   const calculationResultDiv = document.getElementById("calculationResult");
   const bleButton = document.getElementById("button-rotary-BLE");
 
   let currentMode = "angle"; // default is angle
-  let selectMode = false; // point selection 
-  let selectedPoints = []; // Array to store selected point 
+  let selectedPoints = []; // Array to store selected point
 
   const ANGLE_LABEL = "Rotary Angle (radians)";
   const VELOCITY_LABEL = "Rotary Angular Velocity (rad/s)";
 
-  // register annotation plugin 
+  // register annotation plugin
   const annotationPlugin =
     window.chartjsPluginAnnotation ||
     window['chartjs-plugin-annotation'] ||
@@ -45,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.warn("Annotation plugin not found. Annotations will be disabled.");
   }
 
-  // Chart setup 
+  // Chart setup
   const chart = new Chart(ctx, {
     type: "line",
     data: {
@@ -63,16 +61,13 @@ document.addEventListener("DOMContentLoaded", () => {
       animation: false,
       plugins: {
         legend: { display: true, position: "top" },
-        annotation: {
-          annotations: {} 
-        }
+        annotation: { annotations: {} }
       },
       scales: {
         x: { title: { display: true, text: "Time (s)" } },
         y: { title: { display: true, text: "Angle (rad)" } }
       },
       onClick: (event) => {
-        if (!selectMode) return;
         let elements = [];
         if (typeof chart.getElementsAtEventForMode === "function") {
           elements = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
@@ -83,7 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const index = elements[0].index;
           if (selectedPoints.includes(index)) return; // already selected
           selectedPoints.push(index);
-          if (selectedPoints.length > 2) selectedPoints.shift(); 
+          if (selectedPoints.length > 2) selectedPoints.shift();
           updateAnnotations();
           chart.update();
         }
@@ -110,7 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
         yValue: point.y,
         backgroundColor: 'red',
         radius: 5,
-        label: { content: `P${i+1}`, enabled: true, position: 'top' }
+        label: { content: `P${i + 1}`, enabled: true, position: 'top' }
       };
     });
     if (!chart.options.plugins) chart.options.plugins = {};
@@ -118,69 +113,59 @@ document.addEventListener("DOMContentLoaded", () => {
     chart.options.plugins.annotation.annotations = annotations;
   }
 
-  // Function to update chart config 
+  // Function to update chart mode 
   function updateChartMode(mode) {
     currentMode = mode;
     const isAngle = mode === "angle";
     chart.data.datasets[0].label = isAngle ? ANGLE_LABEL : VELOCITY_LABEL;
     chart.options.scales.y.title.text = isAngle ? "Angle (rad)" : "Angular Velocity (rad/s)";
     toggleModeBtn.textContent = isAngle ? "Switch to Velocity" : "Switch to Angle";
-    chart.data.labels = []; // Clear data on mode switch 
+    chart.data.labels = [];
     chart.data.datasets[0].data = [];
-    selectedPoints = []; // Reset selected points
+    selectedPoints = [];
     clearHighlight();
     calculationResultDiv.textContent = '';
     chart.update();
   }
 
-  // Add new point to the chart based on current mode
+  // Add new point to the chart
   function addDataPointObj(json) {
-    // json is expected to be { angle: number, angularVelocity: number, count: number }
     const value = currentMode === "angle" ? json.angle : json.angularVelocity;
-    if (value === undefined) return; 
+    if (value === undefined) return;
 
-    const elapsed = chart.data.labels.length * 0.05; // ~50 ms between updates 
+    const elapsed = chart.data.labels.length * 0.05; // ~50ms
     chart.data.labels.push(elapsed.toFixed(2));
     chart.data.datasets[0].data.push(value);
     if (chart.data.labels.length > 200) {
       chart.data.labels.shift();
       chart.data.datasets[0].data.shift();
-      // adjust he selectedPoints indices if shifted
       selectedPoints = selectedPoints.map(idx => idx - 1).filter(idx => idx >= 0);
       if (chart.data.datasets.length > 1) {
         chart.data.datasets[1].data.shift();
-        chart.data.datasets[1].data.push(null); 
+        chart.data.datasets[1].data.push(null);
       }
     }
-    updateAnnotations(); // Update 
+    updateAnnotations();
     chart.update();
 
-    // Update status div based on mode
     const unit = currentMode === "angle" ? "rad" : "rad/s";
     if (statusDiv) statusDiv.textContent = `${currentMode.charAt(0).toUpperCase() + currentMode.slice(1)}: ${value.toFixed(2)} ${unit}`;
   }
 
-  // Expose function for helper.js to call
+  // Expose function for helper.js
   window.addDataToChart = function(label, value) {
     if (label === ANGLE_LABEL) {
-      if (currentMode !== "angle") {
-        console.warn("addDataToChart: got angle but chart is in", currentMode, "mode. Ignoring.");
-        return;
-      }
+      if (currentMode !== "angle") return;
       addDataPointObj({ angle: Number(value) });
     } else if (label === VELOCITY_LABEL) {
-      if (currentMode !== "velocity") {
-        console.warn("addDataToChart: got velocity but chart is in", currentMode, "mode. Ignoring.");
-        return;
-      }
+      if (currentMode !== "velocity") return;
       addDataPointObj({ angularVelocity: Number(value) });
     } else {
-      // if chart mode is angle try to use value as angle
       addDataPointObj({ angle: Number(value) });
     }
   };
 
-  // delta and area calcs  
+  // delta and area calcs
   function calculateDelta() {
     if (selectedPoints.length < 2) {
       calculationResultDiv.textContent = "Select two points first.";
@@ -235,7 +220,7 @@ document.addEventListener("DOMContentLoaded", () => {
     chart.update();
   }
 
-  // BLE handling 
+  // BLE handling
   let bleDevice = null;
   let bleServer = null;
   let commandChar = null;
@@ -314,18 +299,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (toggleModeBtn) toggleModeBtn.addEventListener("click", () => {
     const newMode = currentMode === "angle" ? "velocity" : "angle";
     updateChartMode(newMode);
-  });
-
-  if (toggleSelectModeBtn) toggleSelectModeBtn.addEventListener("click", () => {
-    selectMode = !selectMode;
-    toggleSelectModeBtn.textContent = selectMode ? "Disable Point Selection" : "Enable Point Selection";
-    if (!selectMode) {
-      selectedPoints = [];
-      clearHighlight();
-      updateAnnotations();
-      chart.update();
-      calculationResultDiv.textContent = '';
-    }
   });
 
   if (calculateDeltaBtn) calculateDeltaBtn.addEventListener("click", calculateDelta);
