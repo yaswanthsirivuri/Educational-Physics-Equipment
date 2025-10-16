@@ -136,7 +136,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const elapsed = chart.data.labels.length * 0.05; // ~50ms
     chart.data.labels.push(elapsed.toFixed(2));
     chart.data.datasets[0].data.push(value);
-    if (chart.data.labels.length > 200) {
+    if (chart.data.labels.length > 400) {
       chart.data.labels.shift();
       chart.data.datasets[0].data.shift();
       selectedPoints = selectedPoints.map(idx => idx - 1).filter(idx => idx >= 0);
@@ -290,6 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
     chart.data.datasets[0].data = [];
     selectedPoints = [];
     clearHighlight();
+    updateAnnotations();
     calculationResultDiv.textContent = '';
     chart.update();
     statusDiv.textContent = "Chart reset and zeroed on ESP32.";
