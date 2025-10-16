@@ -60,12 +60,20 @@ document.addEventListener("DOMContentLoaded", () => {
       responsive: true,
       animation: false,
       plugins: {
-        legend: { display: true, position: "top" },
+        legend: { display: true, position: "top", labels: {
+          font: {
+            size: 16
+          }
+        } },
         annotation: { annotations: {} }
       },
       scales: {
-        x: { title: { display: true, text: "Time (s)" } },
-        y: { title: { display: true, text: "Angle (rad)" } }
+        x: { title: { display: true, text: "Time (s)", font: {
+          size: 18
+        } } },
+        y: { title: { display: true, text: "Angle (rad)", font: {
+          size: 18
+        } } }
       },
       onClick: (event) => {
         let elements = [];
@@ -105,7 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
         yValue: point.y,
         backgroundColor: 'red',
         radius: 5,
-        label: { content: `P${i + 1}`, enabled: true, position: 'top' }
+        label: { content: `P${i + 1}`, enabled: true, position: 'top', font:{size: 14} }
       };
     });
     if (!chart.options.plugins) chart.options.plugins = {};
