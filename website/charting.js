@@ -2,12 +2,14 @@
 // only rotary sensor compatible at the moment, will add others later
 // https://www.chartjs.org/docs/latest
 // filling modes is under area graph not line
+// https://developer.mozilla.org/en-US/docs/Web/API/Blob
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array
 
 document.addEventListener("DOMContentLoaded", () => {
   console.log("Charting.js initialized");
 
   const ctx = document.getElementById("sensorChart").getContext("2d");
-  const statusDiv = document.getElementById("data-rotary-BLE"); 
+  const statusDiv = document.getElementById("data-rotary-BLE");
   const startBtn = document.getElementById("startButton");
   const stopBtn = document.getElementById("stopButton");
   const resetBtn = document.getElementById("resetButton");
@@ -16,9 +18,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const calculateAreaBtn = document.getElementById("calculateArea");
   const calculationResultDiv = document.getElementById("calculationResult");
   const bleButton = document.getElementById("button-rotary-BLE");
+  const saveCsvBtn = document.getElementById("saveCsvButton");
+
 
   let currentMode = "angle"; // default is angle
-  let selectedPoints = []; // Array to store selected point
+  let selectedPoints = []; // Array to store selected point 
+  let allData = []; // Store data 
 
   const ANGLE_LABEL = "Rotary Angle (radians)";
   const VELOCITY_LABEL = "Rotary Angular Velocity (rad/s)";
@@ -84,11 +89,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         if (elements && elements.length > 0) {
           const index = elements[0].index;
-          if (selectedPoints.includes(index)) return; // already selected
-          selectedPoints.push(index);
-          if (selectedPoints.length > 2) selectedPoints.shift();
-          updateAnnotations();
-          chart.update();
+          if (!selectedPoints.includes(index)) {
+            selectedPoints.push(index);
+            if (selectedPoints.length > 2) selectedPoints.shift();
+            updateAnnotations();
+            chart.update();
+          }
         }
       }
     }
@@ -121,7 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
     chart.options.plugins.annotation.annotations = annotations;
   }
 
-  // Function to update chart mode 
+  // Function to update chart mode
   function updateChartMode(mode) {
     currentMode = mode;
     const isAngle = mode === "angle";
@@ -130,6 +136,7 @@ document.addEventListener("DOMContentLoaded", () => {
     toggleModeBtn.textContent = isAngle ? "Switch to Velocity" : "Switch to Angle";
     chart.data.labels = [];
     chart.data.datasets[0].data = [];
+    allData = []; // Clear data
     selectedPoints = [];
     clearHighlight();
     calculationResultDiv.textContent = '';
@@ -141,26 +148,26 @@ document.addEventListener("DOMContentLoaded", () => {
     const value = currentMode === "angle" ? json.angle : json.angularVelocity;
     if (value === undefined) return;
 
-    const elapsed = chart.data.labels.length * 0.05; // ~50ms
+    const elapsed = chart.data.labels.length * 0.05; // ~50ms 
     chart.data.labels.push(elapsed.toFixed(2));
     chart.data.datasets[0].data.push(value);
-    if (chart.data.labels.length > 400) {
-      chart.data.labels.shift();
-      chart.data.datasets[0].data.shift();
-      selectedPoints = selectedPoints.map(idx => idx - 1).filter(idx => idx >= 0);
-      if (chart.data.datasets.length > 1) {
-        chart.data.datasets[1].data.shift();
-        chart.data.datasets[1].data.push(null);
-      }
-    }
-    updateAnnotations();
-    chart.update();
+    allData.push({ time: elapsed, angle: json.angle, angularVelocity: json.angularVelocity });
 
     const unit = currentMode === "angle" ? "rad" : "rad/s";
     if (statusDiv) statusDiv.textContent = `${currentMode.charAt(0).toUpperCase() + currentMode.slice(1)}: ${value.toFixed(2)} ${unit}`;
+
+    const MAX_POINTS = 400; 
+    if (chart.data.labels.length > MAX_POINTS) {
+      chart.data.labels.shift();
+      chart.data.datasets[0].data.shift();
+      allData.shift();
+      selectedPoints = selectedPoints.map(idx => idx - 1).filter(idx => idx >= 0);
+      updateAnnotations();
+    }
+    chart.update();
   }
 
-  // Expose function for helper.js
+// Expose function for helper.js
   window.addDataToChart = function(label, value) {
     if (label === ANGLE_LABEL) {
       if (currentMode !== "angle") return;
@@ -228,6 +235,31 @@ document.addEventListener("DOMContentLoaded", () => {
     chart.update();
   }
 
+  // Save chart data 
+  function saveAsCsv() {
+    if (allData.length === 0) {
+      calculationResultDiv.textContent = "No data";
+      return;
+    }
+
+    let csvContent = "Time (s),Angle (rad),Angular Velocity (rad/s)\n";
+    allData.forEach(point => {
+      csvContent += `${point.time.toFixed(2)},${point.angle.toFixed(4)},${point.angularVelocity.toFixed(4)}\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'sensor_data.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    console.log("file downloaded");
+  }
+
   // BLE handling
   let bleDevice = null;
   let bleServer = null;
@@ -290,28 +322,37 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (bleButton) bleButton.addEventListener("click", connectToESP32);
 
-  if (startBtn) startBtn.addEventListener("click", async () => { await sendCommand("START"); statusDiv.textContent = "Streaming started..."; });
-  if (stopBtn) stopBtn.addEventListener("click", async () => { await sendCommand("STOP"); statusDiv.textContent = "Streaming stopped."; });
+  if (startBtn) startBtn.addEventListener("click", async () => {
+    await sendCommand("START");
+    statusDiv.textContent = "Streaming started...";
+  });
+  if (stopBtn) stopBtn.addEventListener("click", async () => {
+    await sendCommand("STOP");
+    statusDiv.textContent = "Streaming stopped.";
+  });
   if (resetBtn) resetBtn.addEventListener("click", async () => {
     await sendCommand("RESET");
     chart.data.labels = [];
     chart.data.datasets[0].data = [];
+    allData = [];
     selectedPoints = [];
+    updateAnnotations(); // clear annotations
     clearHighlight();
-    updateAnnotations();
     calculationResultDiv.textContent = '';
     chart.update();
     statusDiv.textContent = "Chart reset and zeroed on ESP32.";
   });
 
-  // Mode toggles
+// Mode toggles
   if (toggleModeBtn) toggleModeBtn.addEventListener("click", () => {
     const newMode = currentMode === "angle" ? "velocity" : "angle";
     updateChartMode(newMode);
   });
 
+  // other buttons
   if (calculateDeltaBtn) calculateDeltaBtn.addEventListener("click", calculateDelta);
   if (calculateAreaBtn) calculateAreaBtn.addEventListener("click", calculateArea);
+  if (saveCsvBtn) saveCsvBtn.addEventListener("click", saveAsCsv);
 
   // Initialize  the chart mode
   updateChartMode(currentMode);
