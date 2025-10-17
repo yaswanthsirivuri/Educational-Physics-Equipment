@@ -4,6 +4,7 @@
 // filling modes is under area graph not line
 // https://developer.mozilla.org/en-US/docs/Web/API/Blob
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array
+// https://www.chartjs.org/chartjs-plugin-zoom/latest/ 
 
 document.addEventListener("DOMContentLoaded", () => {
   console.log("Charting.js initialized");
@@ -23,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let currentMode = "angle"; // default is angle
   let selectedPoints = []; // Array to store selected point 
-  let allData = []; // Store data 
+  let allData = []; // Store data
 
   const ANGLE_LABEL = "Rotary Angle (radians)";
   const VELOCITY_LABEL = "Rotary Angular Velocity (rad/s)";
@@ -48,7 +49,22 @@ document.addEventListener("DOMContentLoaded", () => {
     console.warn("Annotation plugin not found. Annotations will be disabled.");
   }
 
-  // Chart setup
+  // zoom plugin
+  const zoomPlugin =
+    window['chartjs-plugin-zoom'] ||
+    window.chartjsPluginZoom ||
+    null;
+
+  if (zoomPlugin) {
+    try {
+      Chart.register(zoomPlugin);
+      console.log("Zoom plugin registered.");
+    } catch (e) {
+      console.warn("Failed to register zoom plugin:", e);
+    }
+  }
+
+  // Chart setup 
   const chart = new Chart(ctx, {
     type: "line",
     data: {
@@ -65,20 +81,29 @@ document.addEventListener("DOMContentLoaded", () => {
       responsive: true,
       animation: false,
       plugins: {
-        legend: { display: true, position: "top", labels: {
-          font: {
-            size: 16
+        legend: {
+          display: true,
+          position: "top",
+          labels: { font: { size: 16 } }
+        },
+        annotation: { annotations: {} },
+        zoom: {
+          zoom: {
+            wheel: { enabled: true }, 
+            mode: 'xy'           },
+          pan: {
+            enabled: true,
+            mode: 'xy' 
           }
-        } },
-        annotation: { annotations: {} }
+        }
       },
       scales: {
-        x: { title: { display: true, text: "Time (s)", font: {
-          size: 18
-        } } },
-        y: { title: { display: true, text: "Angle (rad)", font: {
-          size: 18
-        } } }
+        x: {
+          type: 'category', title: { display: true, text: "Time (s)", font: { size: 18 } }
+        },
+        y: {
+          title: { display: true, text: "Angle (rad)", font: { size: 18 } }
+        }
       },
       onClick: (event) => {
         let elements = [];
@@ -148,10 +173,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const value = currentMode === "angle" ? json.angle : json.angularVelocity;
     if (value === undefined) return;
 
-    const elapsed = chart.data.labels.length * 0.05; // ~50ms 
+    const elapsed = chart.data.labels.length * 0.05; // ~50ms
     chart.data.labels.push(elapsed.toFixed(2));
     chart.data.datasets[0].data.push(value);
-    allData.push({ time: elapsed, angle: json.angle, angularVelocity: json.angularVelocity });
+    allData.push({ time: elapsed, angle: json.angle || 0, angularVelocity: json.angularVelocity || 0 });
 
     const unit = currentMode === "angle" ? "rad" : "rad/s";
     if (statusDiv) statusDiv.textContent = `${currentMode.charAt(0).toUpperCase() + currentMode.slice(1)}: ${value.toFixed(2)} ${unit}`;
@@ -167,7 +192,7 @@ document.addEventListener("DOMContentLoaded", () => {
     chart.update();
   }
 
-// Expose function for helper.js
+  // Expose function for helper.js
   window.addDataToChart = function(label, value) {
     if (label === ANGLE_LABEL) {
       if (currentMode !== "angle") return;
@@ -180,7 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // delta and area calcs
+  // delta and area calcs 
   function calculateDelta() {
     if (selectedPoints.length < 2) {
       calculationResultDiv.textContent = "Select two points first.";
@@ -343,7 +368,7 @@ document.addEventListener("DOMContentLoaded", () => {
     statusDiv.textContent = "Chart reset and zeroed on ESP32.";
   });
 
-// Mode toggles
+// Mode toggles 
   if (toggleModeBtn) toggleModeBtn.addEventListener("click", () => {
     const newMode = currentMode === "angle" ? "velocity" : "angle";
     updateChartMode(newMode);
