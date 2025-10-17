@@ -2,76 +2,62 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Device Comms</title>
-    <style>
-        body {
-            text-align: center;
-            padding-top: 50px;
-        }
-        #counter {
-            font-size: 48px;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-        .sensor {
-            margin-bottom: 20px;
-        }
-        button {
-            margin: 5px;
-        }
-        .hidden {
-            display: none;
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Educational Physics Equipment</h1>
-    <p><a href="help.html" target="_blank">Help</a></p>
-
-    <div class="sensor" id="light">
-        <h1>Light Sensor:</h1>
-        <div id="data-light-serial">No USB device connected...</div>
-        <div>
-            <button class="button" id="button-light-serial">Select USB Port</button>
+    <div class="container">
+        <h1>Educational Physics Equipment</h1>
+        <div class="controls">
+            <button class="help-button" onclick="window.open('help.html', '_blank')">Help</button>
         </div>
-    </div>
 
-    <div class="sensor" id="rotary">
-        <h1>Rotary Encoder:</h1>
-        <div id="data-rotary-serial">No USB device connected...</div>
-        <div id="data-rotary-BLE">No BLE device connected...</div>
-        <div>
-            <button class="button" data-pair="button-rotary-BLE" id="button-rotary-serial">Select USB Port</button>
-            <button class="button" data-pair="button-rotary-serial" id="button-rotary-BLE">Select Bluetooth Device</button>
+        <div class="sensor" id="light">
+            <h2>Light Sensor</h2>
+            <div class="status" id="data-light-serial">No USB device connected</div>
+            <div class="controls">
+                <button class="button" id="button-light-serial">Select USB Port</button>
+            </div>
         </div>
-    </div>
 
-    <div class="sensor" id="ultrasonic">
-        <h1>Ultrasonic Sensor:</h1>
-        <div id="data-ultrasonic-serial">No USB device connected...</div>
-        <div id="data-ultrasonic-BLE">No BLE device connected...</div>
-        <div>
-            <button class="button" data-pair="button-ultrasonic-BLE" id="button-ultrasonic-serial">Select USB Port</button>
-            <button class="button" data-pair="button-ultrasonic-serial" id="button-ultrasonic-BLE">Select Bluetooth Device</button>
+        <div class="sensor" id="rotary">
+            <h2>Rotary Encoder</h2>
+            <div class="status" id="data-rotary-serial">No USB device connected</div>
+            <div class="status" id="data-rotary-BLE">No Bluetooth device connected</div>
+            <div class="controls">
+                <button class="button" data-pair="button-rotary-BLE" id="button-rotary-serial">Select USB Port</button>
+                <button class="button" data-pair="button-rotary-serial" id="button-rotary-BLE">Select Bluetooth Device</button>
+            </div>
         </div>
-    </div>
 
-    <hr>
-
-    <h2>Live Sensor Chart</h2>
-    <div id="chartContainer">
-        <canvas id="sensorChart" width="700" height="350"></canvas>
-
-        <div>
-            <button id="startButton">Start Chart</button>
-            <button id="stopButton">Stop Chart</button>
-            <button id="resetButton">Reset Chart</button>
-            <button id="toggleModeButton">Switch to Velocity</button>
-            <button id="calculateDelta">Calculate Delta</button>
-            <button id="calculateArea">Calculate Area</button>
-            <button id="saveCsvButton">Save as data (.csv)</button>
+        <div class="sensor" id="ultrasonic">
+            <h2>Ultrasonic Sensor</h2>
+            <div class="status" id="data-ultrasonic-serial">No USB device connected</div>
+            <div class="status" id="data-ultrasonic-BLE">No Bluetooth device connected</div>
+            <div class="controls">
+                <button class="button" data-pair="button-ultrasonic-BLE" id="button-ultrasonic-serial">Select USB Port</button>
+                <button class="button" data-pair="button-ultrasonic-serial" id="button-ultrasonic-BLE">Select Bluetooth Device</button>
+            </div>
         </div>
-        <div id="calculationResult" style="margin-top: 10px; font-weight: bold;"></div>
+
+        <hr>
+
+        <h2>Live Sensor Chart</h2>
+        <div class="chart-container">
+            <canvas id="sensorChart" width="900" height="350"></canvas>
+            <div class="controls">
+                <button id="startButton">Start Chart</button>
+                <button id="stopButton">Stop Chart</button>
+                <button id="resetButton">Reset Chart</button>
+                <button id="toggleModeButton">Switch to Velocity</button>
+                <button id="calculateDelta">Calculate Delta</button>
+                <button id="calculateArea">Calculate Area</button>
+                <button id="saveCsvButton">Save as data (.csv)</button>
+            </div>
+            <div class="status" id="calculationResult"></div>
+        </div>
     </div>
 
     <script>

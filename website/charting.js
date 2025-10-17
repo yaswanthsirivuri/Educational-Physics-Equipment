@@ -4,13 +4,12 @@
 // filling modes is under area graph not line
 // https://developer.mozilla.org/en-US/docs/Web/API/Blob
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array
-// https://www.chartjs.org/chartjs-plugin-zoom/latest/ 
 
 document.addEventListener("DOMContentLoaded", () => {
   console.log("Charting.js initialized");
 
   const ctx = document.getElementById("sensorChart").getContext("2d");
-  const statusDiv = document.getElementById("data-rotary-BLE");
+  const statusDiv = document.getElementById("data-rotary-BLE"); 
   const startBtn = document.getElementById("startButton");
   const stopBtn = document.getElementById("stopButton");
   const resetBtn = document.getElementById("resetButton");
@@ -23,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   let currentMode = "angle"; // default is angle
-  let selectedPoints = []; // Array to store selected point 
+  let selectedPoints = []; // Array to store selected point
   let allData = []; // Store data
 
   const ANGLE_LABEL = "Rotary Angle (radians)";
@@ -49,22 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.warn("Annotation plugin not found. Annotations will be disabled.");
   }
 
-  // zoom plugin
-  const zoomPlugin =
-    window['chartjs-plugin-zoom'] ||
-    window.chartjsPluginZoom ||
-    null;
-
-  if (zoomPlugin) {
-    try {
-      Chart.register(zoomPlugin);
-      console.log("Zoom plugin registered.");
-    } catch (e) {
-      console.warn("Failed to register zoom plugin:", e);
-    }
-  }
-
-  // Chart setup 
+  // Chart setup
   const chart = new Chart(ctx, {
     type: "line",
     data: {
@@ -81,29 +65,20 @@ document.addEventListener("DOMContentLoaded", () => {
       responsive: true,
       animation: false,
       plugins: {
-        legend: {
-          display: true,
-          position: "top",
-          labels: { font: { size: 16 } }
-        },
-        annotation: { annotations: {} },
-        zoom: {
-          zoom: {
-            wheel: { enabled: true }, 
-            mode: 'xy'           },
-          pan: {
-            enabled: true,
-            mode: 'xy' 
+        legend: { display: true, position: "top", labels: {
+          font: {
+            size: 16
           }
-        }
+        } },
+        annotation: { annotations: {} }
       },
       scales: {
-        x: {
-          type: 'category', title: { display: true, text: "Time (s)", font: { size: 18 } }
-        },
-        y: {
-          title: { display: true, text: "Angle (rad)", font: { size: 18 } }
-        }
+        x: { title: { display: true, text: "Time (s)", font: {
+          size: 18
+        } } },
+        y: { title: { display: true, text: "Angle (rad)", font: {
+          size: 18
+        } } }
       },
       onClick: (event) => {
         let elements = [];
@@ -114,12 +89,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         if (elements && elements.length > 0) {
           const index = elements[0].index;
-          if (!selectedPoints.includes(index)) {
-            selectedPoints.push(index);
-            if (selectedPoints.length > 2) selectedPoints.shift();
-            updateAnnotations();
-            chart.update();
-          }
+          if (selectedPoints.includes(index)) return; // already selected
+          selectedPoints.push(index);
+          if (selectedPoints.length > 2) selectedPoints.shift();
+          updateAnnotations();
+          chart.update();
         }
       }
     }
@@ -152,7 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
     chart.options.plugins.annotation.annotations = annotations;
   }
 
-  // Function to update chart mode
+  // Function to update chart mode 
   function updateChartMode(mode) {
     currentMode = mode;
     const isAngle = mode === "angle";
@@ -205,7 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // delta and area calcs 
+  // delta and area calcs
   function calculateDelta() {
     if (selectedPoints.length < 2) {
       calculationResultDiv.textContent = "Select two points first.";
@@ -248,7 +222,7 @@ document.addEventListener("DOMContentLoaded", () => {
       fullData[i] = chart.data.datasets[0].data[i];
     }
     const highlightDataset = {
-      label: 'Highlighted Area',
+      label: 'Area under the curve',
       data: fullData,
       borderColor: 'rgba(255, 99, 132, 0.5)',
       backgroundColor: 'rgba(255, 99, 132, 0.3)',
@@ -260,29 +234,29 @@ document.addEventListener("DOMContentLoaded", () => {
     chart.update();
   }
 
-  // Save chart data 
+  // Save chart data
   function saveAsCsv() {
     if (allData.length === 0) {
-      calculationResultDiv.textContent = "No data";
-      return;
-    }
+    calculationResultDiv.textContent = "No data";
+    return;
+  }
 
-    let csvContent = "Time (s),Angle (rad),Angular Velocity (rad/s)\n";
-    allData.forEach(point => {
-      csvContent += `${point.time.toFixed(2)},${point.angle.toFixed(4)},${point.angularVelocity.toFixed(4)}\n`;
-    });
+  let csvContent = "Time (s),Angle (rad),Angular Velocity (rad/s)\n";
+  allData.forEach(point => {
+    csvContent += `${point.time.toFixed(2)},${point.angle.toFixed(4)},${point.angularVelocity.toFixed(4)}\n`;
+  });
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'sensor_data.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', 'sensor_data.csv');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 
-    console.log("file downloaded");
+  console.log("file downloaded");
   }
 
   // BLE handling
@@ -347,28 +321,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (bleButton) bleButton.addEventListener("click", connectToESP32);
 
-  if (startBtn) startBtn.addEventListener("click", async () => {
-    await sendCommand("START");
-    statusDiv.textContent = "Streaming started...";
-  });
-  if (stopBtn) stopBtn.addEventListener("click", async () => {
-    await sendCommand("STOP");
-    statusDiv.textContent = "Streaming stopped.";
-  });
+  if (startBtn) startBtn.addEventListener("click", async () => { await sendCommand("START"); statusDiv.textContent = "Streaming started..."; });
+  if (stopBtn) stopBtn.addEventListener("click", async () => { await sendCommand("STOP"); statusDiv.textContent = "Streaming stopped."; });
   if (resetBtn) resetBtn.addEventListener("click", async () => {
     await sendCommand("RESET");
     chart.data.labels = [];
     chart.data.datasets[0].data = [];
     allData = [];
     selectedPoints = [];
-    updateAnnotations(); // clear annotations
     clearHighlight();
+    updateAnnotations();
     calculationResultDiv.textContent = '';
     chart.update();
     statusDiv.textContent = "Chart reset and zeroed on ESP32.";
   });
 
-// Mode toggles 
+  // Mode toggles
   if (toggleModeBtn) toggleModeBtn.addEventListener("click", () => {
     const newMode = currentMode === "angle" ? "velocity" : "angle";
     updateChartMode(newMode);
