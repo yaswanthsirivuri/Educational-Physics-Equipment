@@ -1,31 +1,39 @@
 // web-serial api https://developer.chrome.com/docs/capabilities/serial
 // web-bluetooth api https://developer.chrome.com/docs/capabilities/bluetooth
 
-const logSerialElement = document.getElementById("log-serial");
+  /**
+   * Element to display the serial log 
+   * @type {HTMLElement|null}
+   */
+  const logSerialElement = document.getElementById("log-serial");
 
-if ("serial" in navigator) {
-	console.log("serial supported");
-}
+  if ("serial" in navigator) {
+    console.log("serial supported");
+  }
 
-// LIGHT SENSOR //
+  // LIGHT SENSOR //
 
+  // ROTARY ENCODER //
 
+  // ULTRASONIC //
 
-// ROTARY ENCODER //
+  /**
+   * event listener for ultrasonic serial button 
+   * @async
+   */
+  document.getElementById('button-ultrasonic-serial').addEventListener('click', async () => {
+    try {
+      await readSerialUltrasonic();
+    } catch (error) {
+      logSerialElement.textContent = error;
+      console.error(error);
+    }
+  });
 
-
-
-// ULTRASONIC //
-
-document.getElementById('button-ultrasonic-serial').addEventListener('click', async () => {
-	try {
-		await readSerialUltrasonic();
-	} catch (error) {
-		logSerialElement.textContent = error;
-		console.error(error);
-	}
-});
-
-document.getElementById('button-ultrasonic-BLE').addEventListener('click', async () => {
-	readBluetoothUltrasonic();
-});
+  /**
+   * Event listener for ultrasonic BLE button 
+   * @async
+   */
+  document.getElementById('button-ultrasonic-BLE').addEventListener('click', async () => {
+    readBluetoothUltrasonic();
+  });
