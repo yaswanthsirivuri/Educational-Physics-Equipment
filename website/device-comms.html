@@ -44,21 +44,31 @@
 
         <hr>
 
-        <h2>Live Sensor Chart</h2>
-        <div class="chart-container">
-            <canvas id="sensorChart" width="900" height="350"></canvas>
-            <div class="controls">
-                <button id="startButton">Start Chart</button>
-                <button id="stopButton">Stop Chart</button>
-                <button id="resetButton">Reset Chart</button>
-                <button id="toggleModeButton">Switch to Velocity</button>
-                <button id="calculateDelta">Calculate Delta</button>
-                <button id="calculateArea">Calculate Area</button>
-                <button id="saveCsvButton">Save a data (.csv)</button>
-            </div>
-            <div class="status" id="calculationResult"></div>
+    <h2>Live Sensor Charts</h2>
+        <div class="controls">
+            <button id="startButton">Start Chart</button>
+            <button id="stopButton">Stop Chart</button>
+            <button id="resetButton">Reset Chart</button>
+            <button id="toggleModeButton">Switch to Velocity</button>
+            <button id="dualModeButton">Enable two Charts</button>
+            <button id="saveCsvButton">Save a data (.csv)</button>
         </div>
-    </div>
+        <div class="chart-container" id="angleChartContainer">
+            <canvas id="sensorChartAngle" width="900" height="350"></canvas>
+            <div class="controls">
+                <button id="calculateDeltaAngle">Calculate Delta</button>
+                <button id="calculateAreaAngle">Calculate Area</button>
+            </div>
+            <div class="status" id="calculationResultAngle"></div>
+        </div>
+        <div class="chart-container" id="velocityChartContainer" style="display: none;">
+            <canvas id="sensorChartVelocity" width="900" height="350"></canvas>
+            <div class="controls">
+                <button id="calculateDeltaVelocity">Calculate Delta</button>
+                <button id="calculateAreaVelocity">Calculate Area</button>
+            </div>
+            <div class="status" id="calculationResultVelocity"></div>
+        </div>
 
     <script>
         function focusButton(event) {
