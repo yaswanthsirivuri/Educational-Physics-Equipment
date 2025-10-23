@@ -496,11 +496,18 @@ document.addEventListener("DOMContentLoaded", () => {
             csvRows.push([data.time, data.angle, data.angularVelocity, data.count].join(","));
         });
         const csvContent = csvRows.join("\n");
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
+
         const blob = new Blob([csvContent], { type: "text/csv" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "sensor_data.csv";
+        a.download = `sensor_data_${dateStr}.csv`;
         a.click();
         URL.revokeObjectURL(url);
     }
