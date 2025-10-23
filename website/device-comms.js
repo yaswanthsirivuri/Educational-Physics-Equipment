@@ -38,10 +38,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    if ("serial" in navigator) {
-        console.log("serial supported");
-    }
-
     // LIGHT SENSOR //
 
     // ROTARY ENCODER //

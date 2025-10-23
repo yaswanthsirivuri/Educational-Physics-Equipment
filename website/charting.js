@@ -4,6 +4,9 @@
 // filling modes is under area graph not line
 // https://developer.mozilla.org/en-US/docs/Web/API/Blob
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array
+// https://developer.mozilla.org/en-US/docs/Web/API/FileReader
+// https://www.w3schools.com/jsref/dom_obj_fileupload.asp
+// https://www.papaparse.com/
 
 document.addEventListener("DOMContentLoaded", () => {
     console.log("Charting.js initialized");
@@ -27,8 +30,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const statusDiv = document.getElementById("data-rotary-BLE");
 
     /**
-     * Start button 
-     * @type {HTMLElement|null}
+    * Start button 
+    * @type {HTMLElement|null}
      */
     const startBtn = document.getElementById("startButton");
 
@@ -105,7 +108,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const saveCsvBtn = document.getElementById("saveCsvButton");
 
     /**
-     * Two charts mode flag
+     * File input for importing data
+     * @type {HTMLInputElement|null}
+     */
+    const importCsvInput = document.getElementById("importCsvInput");
+
+    /**
+     * Button for CSV file import
+     * @type {HTMLElement|null}
+     */
+    const importCsvBtn = document.getElementById("importCsvButton");
+
+    /**
+     * chart mode flag 
      * @type {boolean}
      */
     let isDual = false;
@@ -120,13 +135,13 @@ document.addEventListener("DOMContentLoaded", () => {
      * Array to store indices of selected points chart
      * @type {number[]}
      */
-    let selectedPointsAngle = []; 
+    let selectedPointsAngle = [];
 
     /**
      * Array to store indices of selected points on the velocity chart
      * @type {number[]}
      */
-    let selectedPointsVelocity = []; 
+    let selectedPointsVelocity = [];
 
     /**
      * Array to store data points 
@@ -152,12 +167,12 @@ document.addEventListener("DOMContentLoaded", () => {
      * @type {Object|null}
      */
     const annotationPlugin =
-      window.chartjsPluginAnnotation ||
-      window['chartjs-plugin-annotation'] ||
-      window.chartjs_plugin_annotation ||
-      window.ChartAnnotation ||
-      window.annotationPlugin ||
-      null;
+        window.chartjsPluginAnnotation ||
+        window['chartjs-plugin-annotation'] ||
+        window.chartjs_plugin_annotation ||
+        window.ChartAnnotation ||
+        window.annotationPlugin ||
+        null;
 
     if (annotationPlugin) {
         try {
@@ -191,14 +206,12 @@ document.addEventListener("DOMContentLoaded", () => {
             responsive: true,
             animation: false,
             plugins: {
-                legend: { display: true, position: "top", labels: {
-                    font: { size: 16 }
-                } },
+                legend: { display: true, position: "top" },
                 annotation: { annotations: {} }
             },
             scales: {
-                x: { title: { display: true, text: "Time (s)", font: { size: 18 } } },
-                y: { title: { display: true, text: "Angle (rad)", font: { size: 18 } } }
+                x: { title: { display: true, text: "Time (s)" } },
+                y: { title: { display: true, text: "Angle (rad)" } }
             },
             onClick: (event) => {
                 let elements = [];
@@ -209,12 +222,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 if (elements && elements.length > 0) {
                     const index = elements[0].index;
-                    if (!selectedPointsAngle.includes(index)) {
-                        selectedPointsAngle.push(index);
-                        if (selectedPointsAngle.length > 2) selectedPointsAngle.shift();
-                        updateAnnotationsAngle();
-                        chartAngle.update();
-                    }
+                    if (selectedPointsAngle.includes(index)) return; 
+                    selectedPointsAngle.push(index);
+                    if (selectedPointsAngle.length > 2) selectedPointsAngle.shift();
+                    updateAnnotationsAngle();
+                    chartAngle.update();
                 }
             }
         }
@@ -241,15 +253,17 @@ document.addEventListener("DOMContentLoaded", () => {
             responsive: true,
             animation: false,
             plugins: {
-                legend: { display: true, position: "top", labels: {
-                    font: { size: 16 }
-                } },
+                legend: { display: true, position: "top" },
                 annotation: { annotations: {} }
             },
             scales: {
-                x: { title: { display: true, text: "Time (s)", font: { size: 18 } } },
-                y: { title: { display: true, text: "Angular Velocity (rad/s)", font: { size: 18 } } }
+                x: { title: { display: true, text: "Time (s)" } },
+                y: { title: { display: true, text: "Angular Velocity (rad/s)" } }
             },
+            /**
+             * Click events for velocity chart selecting points
+             * @param {Event} event 
+             */
             onClick: (event) => {
                 let elements = [];
                 if (typeof chartVelocity.getElementsAtEventForMode === "function") {
@@ -259,12 +273,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 if (elements && elements.length > 0) {
                     const index = elements[0].index;
-                    if (!selectedPointsVelocity.includes(index)) {
-                        selectedPointsVelocity.push(index);
-                        if (selectedPointsVelocity.length > 2) selectedPointsVelocity.shift();
-                        updateAnnotationsVelocity();
-                        chartVelocity.update();
-                    }
+                    if (selectedPointsVelocity.includes(index)) return; 
+                    selectedPointsVelocity.push(index);
+                    if (selectedPointsVelocity.length > 2) selectedPointsVelocity.shift();
+                    updateAnnotationsVelocity();
+                    chartVelocity.update();
                 }
             }
         }
@@ -303,7 +316,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 yValue: point.y,
                 backgroundColor: 'red',
                 radius: 5,
-                label: { content: `P${i + 1}`, enabled: true, position: 'top', font: { size: 14 } }
+                label: { content: `P${i + 1}`, enabled: true, position: 'top' }
             };
         });
         if (!chartAngle.options.plugins) chartAngle.options.plugins = {};
@@ -324,7 +337,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 yValue: point.y,
                 backgroundColor: 'red',
                 radius: 5,
-                label: { content: `P${i + 1}`, enabled: true, position: 'top', font: { size: 14 } }
+                label: { content: `P${i + 1}`, enabled: true, position: 'top' }
             };
         });
         if (!chartVelocity.options.plugins) chartVelocity.options.plugins = {};
@@ -337,56 +350,24 @@ document.addEventListener("DOMContentLoaded", () => {
      * @param {Object} json - JSON object containing angle and/or angularVelocity.
      */
     function addDataPointObj(json) {
-        if (json.angle === undefined && json.angularVelocity === undefined) return;
-
-        const elapsed = allData.length * 0.05;
-        const timeStr = elapsed.toFixed(2);
-        const angle = json.angle !== undefined ? json.angle : 0;
-        const velocity = json.angularVelocity !== undefined ? json.angularVelocity : 0;
-
-        chartAngle.data.labels.push(timeStr);
-        chartAngle.data.datasets[0].data.push(angle);
-
-        chartVelocity.data.labels.push(timeStr);
-        chartVelocity.data.datasets[0].data.push(velocity);
-
-        allData.push({ time: elapsed, angle: angle, angularVelocity: velocity });
-
-        if (statusDiv) statusDiv.textContent = `Angle: ${angle.toFixed(2)} rad, Velocity: ${velocity.toFixed(2)} rad/s`;
-
-        const MAX_POINTS = 400; 
-        if (chartAngle.data.labels.length > MAX_POINTS) {
-            chartAngle.data.labels.shift();
-            chartAngle.data.datasets[0].data.shift();
-            chartVelocity.data.labels.shift();
-            chartVelocity.data.datasets[0].data.shift();
-            allData.shift();
-            selectedPointsAngle = selectedPointsAngle.map(idx => idx - 1).filter(idx => idx >= 0);
-            selectedPointsVelocity = selectedPointsVelocity.map(idx => idx - 1).filter(idx => idx >= 0);
-            updateAnnotationsAngle();
-            updateAnnotationsVelocity();
-        }
+        if (typeof json.angle !== "number" || typeof json.angularVelocity !== "number") return;
+        const time = (allData.length > 0 ? allData[allData.length - 1].time + 0.05 : 0);
+        allData.push({
+            time: time,
+            angle: json.angle,
+            angularVelocity: json.angularVelocity,
+            count: json.count
+        });
+        chartAngle.data.labels.push(time.toFixed(2));
+        chartAngle.data.datasets[0].data.push(json.angle);
+        chartVelocity.data.labels.push(time.toFixed(2));
+        chartVelocity.data.datasets[0].data.push(json.angularVelocity);
         chartAngle.update();
         chartVelocity.update();
     }
 
     /**
-     * Expose function for helper.js 
-     * @param {string} label - Dataset label, either ANGLE_LABEL or VELOCITY_LABEL
-     * @param {number} value - Value to add to chart
-     */
-    window.addDataToChart = function(label, value) {
-        if (label === ANGLE_LABEL) {
-            addDataPointObj({ angle: Number(value) });
-        } else if (label === VELOCITY_LABEL) {
-            addDataPointObj({ angularVelocity: Number(value) });
-        } else {
-            addDataPointObj({ angle: Number(value) });
-        }
-    };
-
-    /**
-     * delta and area calcs (angle) 
+     * Calculate delta 
      */
     function calculateDeltaAngle() {
         if (selectedPointsAngle.length < 2) {
@@ -396,37 +377,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const idx1 = Math.min(...selectedPointsAngle);
         const idx2 = Math.max(...selectedPointsAngle);
         const x1 = parseFloat(chartAngle.data.labels[idx1]);
-        const y1 = chartAngle.data.datasets[0].data[idx1];
         const x2 = parseFloat(chartAngle.data.labels[idx2]);
+        const y1 = chartAngle.data.datasets[0].data[idx1];
         const y2 = chartAngle.data.datasets[0].data[idx2];
         const deltaY = y2 - y1;
         const deltaX = x2 - x1;
-        const slope = deltaY / deltaX;
-        calculationResultAngleDiv.textContent = `Delta: Δy = ${deltaY.toFixed(4)} rad, Δx = ${deltaX.toFixed(4)} s, Slope = ${slope.toFixed(4)} rad/s`;
+        const slope = deltaX !== 0 ? deltaY / deltaX : "undefined";
+        const unit = "rad/s";
+        calculationResultAngleDiv.textContent = `Δy = ${deltaY.toFixed(4)} rad, Δx = ${deltaX.toFixed(4)} s, Slope = ${slope === "undefined" ? slope : slope.toFixed(4)} ${unit}`;
     }
 
     /**
-     * delta and area calcs (velocity) 
-     */
-    function calculateDeltaVelocity() {
-        if (selectedPointsVelocity.length < 2) {
-            calculationResultVelocityDiv.textContent = "Select two points first.";
-            return;
-        }
-        const idx1 = Math.min(...selectedPointsVelocity);
-        const idx2 = Math.max(...selectedPointsVelocity);
-        const x1 = parseFloat(chartVelocity.data.labels[idx1]);
-        const y1 = chartVelocity.data.datasets[0].data[idx1];
-        const x2 = parseFloat(chartVelocity.data.labels[idx2]);
-        const y2 = chartVelocity.data.datasets[0].data[idx2];
-        const deltaY = y2 - y1;
-        const deltaX = x2 - x1;
-        const slope = deltaY / deltaX;
-        calculationResultVelocityDiv.textContent = `Delta: Δy = ${deltaY.toFixed(4)} rad/s, Δx = ${deltaX.toFixed(4)} s, Slope = ${slope.toFixed(4)} rad/s²`;
-    }
-
-    /**
-     * Calculate area for angle
+     * area under the curve 
      */
     function calculateAreaAngle() {
         if (selectedPointsAngle.length < 2) {
@@ -442,7 +404,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const dx = parseFloat(chartAngle.data.labels[i + 1]) - parseFloat(chartAngle.data.labels[i]);
             area += (y1 + y2) / 2 * dx;
         }
-        calculationResultAngleDiv.textContent = `Area under curve: ${area.toFixed(4)} rad·s`;
+        const unit = "rad·s";
+        calculationResultAngleDiv.textContent = `Area under curve: ${area.toFixed(4)} ${unit}`;
 
         // highlight area
         clearHighlightAngle();
@@ -464,7 +427,28 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /**
-     * Calculate area for velocity
+     * Calculates the delta 
+     */
+    function calculateDeltaVelocity() {
+        if (selectedPointsVelocity.length < 2) {
+            calculationResultVelocityDiv.textContent = "Select two points";
+            return;
+        }
+        const idx1 = Math.min(...selectedPointsVelocity);
+        const idx2 = Math.max(...selectedPointsVelocity);
+        const x1 = parseFloat(chartVelocity.data.labels[idx1]);
+        const x2 = parseFloat(chartVelocity.data.labels[idx2]);
+        const y1 = chartVelocity.data.datasets[0].data[idx1];
+        const y2 = chartVelocity.data.datasets[0].data[idx2];
+        const deltaY = y2 - y1;
+        const deltaX = x2 - x1;
+        const slope = deltaX !== 0 ? deltaY / deltaX : "undefined";
+        const unit = "rad/s²";
+        calculationResultVelocityDiv.textContent = `Δy = ${deltaY.toFixed(4)} rad/s, Δx = ${deltaX.toFixed(4)} s, Slope = ${slope === "undefined" ? slope : slope.toFixed(4)} ${unit}`;
+    }
+
+    /**
+     * area calc 
      */
     function calculateAreaVelocity() {
         if (selectedPointsVelocity.length < 2) {
@@ -480,7 +464,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const dx = parseFloat(chartVelocity.data.labels[i + 1]) - parseFloat(chartVelocity.data.labels[i]);
             area += (y1 + y2) / 2 * dx;
         }
-        calculationResultVelocityDiv.textContent = `Area under curve: ${area.toFixed(4)} rad`;
+        const unit = "rad/s·s = rad";
+        calculationResultVelocityDiv.textContent = `Area under curve: ${area.toFixed(4)} ${unit}`;
 
         // highlight the area
         clearHighlightVelocity();
@@ -505,27 +490,19 @@ document.addEventListener("DOMContentLoaded", () => {
      * Save chart data 
      */
     function saveAsCsv() {
-        if (allData.length === 0) {
-            calculationResultAngleDiv.textContent = "No data";
-            return;
-        }
-
-        let csvContent = "Time (s),Angle (rad),Angular Velocity (rad/s)\n";
-        allData.forEach(point => {
-            csvContent += `${point.time.toFixed(2)},${point.angle.toFixed(4)},${point.angularVelocity.toFixed(4)}\n`;
+        const headers = ["Time (s)", "Angle (rad)", "Angular Velocity (rad/s)", "Count"];
+        const csvRows = [headers.join(",")];
+        allData.forEach(data => {
+            csvRows.push([data.time, data.angle, data.angularVelocity, data.count].join(","));
         });
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const csvContent = csvRows.join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv" });
         const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.setAttribute('href', url);
-        link.setAttribute('download', 'sensor_data.csv');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "sensor_data.csv";
+        a.click();
         URL.revokeObjectURL(url);
-
-        console.log("file downloaded");
     }
 
     /**
@@ -567,7 +544,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            statusDiv.textContent = "Connecting to ESP32...";
+            statusDiv.textContent = "Connecting to device";
 
             bleDevice = await navigator.bluetooth.requestDevice({
                 filters: [{ services: [serviceUUID] }]
@@ -589,10 +566,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
 
-            statusDiv.textContent = "Connected. Waiting for data...";
+            statusDiv.textContent = "Connected. Waiting for data.";
             console.log("Connected to ESP32 via BLE");
         } catch (error) {
-            console.error("BLE connection failed:", error);
+            console.error("Bluetooth connection failed:", error);
             statusDiv.textContent = "Connection failed. Try again.";
         }
     }
@@ -615,16 +592,96 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    /**
+     * Handles the import of CSV data and updates the charts.
+     * Supports CSVs with 3 or 4 columns (Time, Angle, Angular Velocity, [Count]).
+     * @param {Event} event - The file input change event.
+     */
+    function handleCsvImport(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            console.warn("No file selected");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const csvContent = e.target.result;
+            const lines = csvContent.split(/\r?\n/); // Handle different line endings
+            if (lines.length < 2) {
+                console.warn("Invalid or empty CSV");
+                return;
+            }
+
+            // Skip header and parse data
+            allData = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                const values = line.split(',');
+                // Accept 3 or 4 columns
+                if (values.length !== 3 && values.length !== 4) {
+                    console.warn("Invalid row in CSV (expected 3 or 4 columns):", line);
+                    continue;
+                }
+                const time = parseFloat(values[0]);
+                const angle = parseFloat(values[1]);
+                const angularVelocity = parseFloat(values[2]);
+                // Use count if provided, otherwise default to 0
+                const count = values.length === 4 ? parseInt(values[3], 10) : 0;
+                if (isNaN(time) || isNaN(angle) || isNaN(angularVelocity) || (values.length === 4 && isNaN(count))) {
+                    console.warn("Invalid values in row:", line);
+                    continue;
+                }
+                allData.push({ time, angle, angularVelocity, count });
+            }
+
+            // Sort by time if needed
+            allData.sort((a, b) => a.time - b.time);
+
+            // Update charts with imported data
+            chartAngle.data.labels = allData.map(d => d.time.toFixed(2));
+            chartAngle.data.datasets[0].data = allData.map(d => d.angle);
+            chartVelocity.data.labels = allData.map(d => d.time.toFixed(2));
+            chartVelocity.data.datasets[0].data = allData.map(d => d.angularVelocity);
+
+            // Reset selections, highlights, annotations, and results
+            selectedPointsAngle = [];
+            selectedPointsVelocity = [];
+            clearHighlightAngle();
+            clearHighlightVelocity();
+            updateAnnotationsAngle();
+            updateAnnotationsVelocity();
+            calculationResultAngleDiv.textContent = '';
+            calculationResultVelocityDiv.textContent = '';
+
+            // Refresh charts
+            chartAngle.update();
+            chartVelocity.update();
+
+            console.log("CSV imported and plotted successfully");
+        };
+        reader.onerror = (e) => {
+            console.error("Error reading CSV:", e);
+        };
+        reader.readAsText(file);
+    }
+
+    /**
+     * Sets up event listeners for all buttons and inputs.
+     */
     if (bleButton) bleButton.addEventListener("click", connectToESP32);
 
     if (startBtn) startBtn.addEventListener("click", async () => {
         await sendCommand("START");
-        statusDiv.textContent = "Streaming started...";
+        statusDiv.textContent = "Streaming started.";
     });
+
     if (stopBtn) stopBtn.addEventListener("click", async () => {
         await sendCommand("STOP");
         statusDiv.textContent = "Streaming stopped.";
     });
+
     if (resetBtn) resetBtn.addEventListener("click", async () => {
         await sendCommand("RESET");
         chartAngle.data.labels = [];
@@ -642,10 +699,9 @@ document.addEventListener("DOMContentLoaded", () => {
         calculationResultVelocityDiv.textContent = '';
         chartAngle.update();
         chartVelocity.update();
-        statusDiv.textContent = "Chart reset and zeroed on ESP32.";
+        statusDiv.textContent = "Chart reset and zeroed on sensor.";
     });
 
-    // Mode toggles
     if (toggleModeBtn) toggleModeBtn.addEventListener("click", () => {
         activeSingle = activeSingle === "angle" ? "velocity" : "angle";
         toggleModeBtn.textContent = `Switch to ${activeSingle === "angle" ? "Velocity" : "Angle"}`;
@@ -669,10 +725,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // other buttons
     if (calculateDeltaAngleBtn) calculateDeltaAngleBtn.addEventListener("click", calculateDeltaAngle);
     if (calculateAreaAngleBtn) calculateAreaAngleBtn.addEventListener("click", calculateAreaAngle);
     if (calculateDeltaVelocityBtn) calculateDeltaVelocityBtn.addEventListener("click", calculateDeltaVelocity);
     if (calculateAreaVelocityBtn) calculateAreaVelocityBtn.addEventListener("click", calculateAreaVelocity);
     if (saveCsvBtn) saveCsvBtn.addEventListener("click", saveAsCsv);
+    if (importCsvInput) importCsvInput.addEventListener("change", handleCsvImport);
+    if (importCsvBtn) importCsvBtn.addEventListener("click", () => importCsvInput.click());
+
+    console.log("charting.js loaded");
 });
