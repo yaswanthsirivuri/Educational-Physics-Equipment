@@ -720,7 +720,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (dualModeBtn) dualModeBtn.addEventListener("click", () => {
         isDual = !isDual;
-        dualModeBtn.textContent = isDual ? "Disable Dual Charts" : "Enable Dual Charts";
+        dualModeBtn.textContent = isDual ? "Disable Two Charts" : "Enable Two Charts";
         if (isDual) {
             document.getElementById("angleChartContainer").style.display = "block";
             document.getElementById("velocityChartContainer").style.display = "block";
