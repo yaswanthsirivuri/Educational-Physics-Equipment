@@ -1,34 +1,74 @@
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Help</title>
-        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="styles.css">
-    </head>
-    <body>
-        <h1>Help</h1>
-        <h2>Bluetooth Troubleshooting</h2>
-        <p>
-            - Make sure you are using the chrome browser (it supports web bluetooth)<br>
-            - Make sure bluetooth is turned on on your device<br>
-            
-        </p>
-        <h2>Saving data</h2>
-        <p>
-            - Clicking the save data button will save the current recorded data locally to your computer<br>
-            - .csv files can be used in excel, google sheets, nz grapher, and many other external tools<br>
-                for further analysis
-        </p>
-        <h2>SHM experiments</h2>
-        <p>
-            - If your SHM data doesn't ressemble a nice, clean sine wave, have a think about the neccesary<br>
-            conditions for SHM. Why might this result in messy data?
-        </p>
-    </body>
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div>
+        <button id="toggleDarkModeButton" aria-label="Toggle dark mode" aria-pressed="false">Switch to Dark Mode</button>
+    </div>
+    <h1>Help</h1>
+    <h2>Bluetooth Troubleshooting</h2>
+    <ul>
+        <li>Make sure you are using the Chrome browser (it supports Web Bluetooth).</li>
+        <li>Ensure Bluetooth is turned on on your device.</li>
+    </ul>
+    <h2>Saving Data</h2>
+    <ul>
+        <li>Clicking the save data button will save the current recorded data locally to your computer.</li>
+        <li>.csv files can be used in Excel, Google Sheets, NZ Grapher, and many other external tools for further analysis.</li>
+    </ul>
+    <h2>SHM Experiments</h2>
+    <ul>
+        <li>If your SHM data doesn't resemble a clean sine wave, consider the necessary conditions for simple harmonic motion (SHM). Why might this result in messy data?</li>
+    </ul>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            /**
+             * Dark mode toggle button
+             * @type {HTMLElement|null}
+             */
+            const toggleDarkModeButton = document.getElementById('toggleDarkModeButton');
 
-    <body>
-        
-    </body>
-    </html>
+            /**
+             * Root HTML element
+             * @type {HTMLHtmlElement}
+             */
+            const htmlElement = document.documentElement;
+
+            if (!toggleDarkModeButton) {
+                console.error('Toggle button not found!');
+                return;
+            }
+
+            if (!('bluetooth' in navigator)) {
+                console.warn('Web Bluetooth is not supported in this browser.');
+            }
+
+            if (!window.localStorage) {
+                console.warn('localStorage is not supported in this browser.');
+            }
+
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                htmlElement.setAttribute('data-theme', savedTheme);
+                toggleDarkModeButton.textContent = savedTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+                toggleDarkModeButton.setAttribute('aria-pressed', savedTheme === 'dark' ? 'true' : 'false');
+            }
+
+            toggleDarkModeButton.addEventListener('click', () => {
+                const currentTheme = htmlElement.getAttribute('data-theme') || 'light';
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                htmlElement.setAttribute('data-theme', newTheme);
+                toggleDarkModeButton.textContent = newTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+                toggleDarkModeButton.setAttribute('aria-pressed', newTheme === 'dark' ? 'true' : 'false');
+                localStorage.setItem('theme', newTheme);
+            });
+        });
+    </script>
+</body>
+</html>
