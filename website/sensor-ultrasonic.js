@@ -74,6 +74,7 @@ async function readSerialUltrasonic() {
 		console.log(distance);
 		if (distance != -1) {
 			distanceElementSerial.textContent = distance.toFixed(1) + "mm";
+            window.addDataToChart({distance: distance});
 		}
 
 		sleep(200);
@@ -86,6 +87,7 @@ function onCharacteristicValueChange(event) {
 	const distance = event.target.value.getFloat32();
 	console.log("bt distance (mm) = " + distance);
 	distanceElementBLE.textContent = distance.toFixed(1) + "mm";
+    window.addDataToChart({distance: distance});
 }
 
 function readBluetoothUltrasonic() {

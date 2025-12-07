@@ -62,7 +62,7 @@ void loop() {
 	writeDistanceSerial();
 	processBLE();
 
-	delay(500);
+	delay(50);
 }
 
 // SUB-FUNCTIONS //

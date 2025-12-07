@@ -94,6 +94,20 @@
             } else {
                 console.error('Current sensor section not found');
             }
+
+            // Set current sensor type
+            if (clickedButton.id.includes('ultrasonic')) {
+                window.currentSensor = 'ultrasonic';
+            } else if (clickedButton.id.includes('rotary')) {
+                window.currentSensor = 'rotary';
+            } else {
+                window.currentSensor = 'unknown';
+            }
+
+            // Update chart labels if function exists
+            if (window.updateChartLabels) {
+                window.updateChartLabels();
+            }
         }
 
         //event listeners for the buttons
