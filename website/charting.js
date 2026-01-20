@@ -193,6 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 label: POSITION_LABEL,
                 data: [],
                 borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
             }]
         },
         options: {
@@ -228,6 +229,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // Add startTime
     let startTime = null;
 
+    // Smoothing variables for ultrasonic
+    let lastSmoothedPosition = 0;
+    const ALPHA = 0.3; // EMA alpha (0-1); higher = more responsive 
+    const OUTLIER_THRESHOLD = 500; // mm; max allowed jump from last value
+
     // Function to update labels based on sensor
     window.updateChartLabels = function() {
         if (window.currentSensor === 'ultrasonic') {
@@ -262,6 +268,22 @@ document.addEventListener("DOMContentLoaded", () => {
             count = jsonObj.count || 0;
         } else if (jsonObj.distance !== undefined) {
             position = jsonObj.distance;
+            // smoothing and outlier rejection for ultrasonic
+            if (window.currentSensor === 'ultrasonic') {
+                if (allData.length === 0) {
+                    lastSmoothedPosition = position; 
+                } else {
+                    const delta = Math.abs(position - lastSmoothedPosition);
+                    if (delta > OUTLIER_THRESHOLD) {
+                        // Reject outlier use last smoothed
+                        position = lastSmoothedPosition;
+                    } else {
+                        // Apply ema smoothing
+                        position = ALPHA * position + (1 - ALPHA) * lastSmoothedPosition;
+                    }
+                    lastSmoothedPosition = position;
+                }
+            }
             // Compute velocity
             if (allData.length > 0) {
                 const last = allData[allData.length - 1];
@@ -304,28 +326,56 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     if (resetBtn) resetBtn.addEventListener("click", async () => {
-        if (window.currentSensor === 'rotary') {
+    // send hardware reset for sensors that support it, temp fix
+    if (window.currentSensor === 'rotary') {
+        try {
             await sendCommand("RESET");
+        } catch (err) {
+            console.warn("Failed to send RESET command:", err);
         }
-        chartAngle.data.labels = [];
-        chartAngle.data.datasets[0].data = [];
-        chartVelocity.data.labels = [];
-        chartVelocity.data.datasets[0].data = [];
-        allData = [];
-        selectedPointsAngle = [];
-        selectedPointsVelocity = [];
-        clearHighlightAngle();
-        clearHighlightVelocity();
-        updateAnnotationsAngle();
-        updateAnnotationsVelocity();
-        calculationResultAngleDiv.textContent = '';
-        calculationResultVelocityDiv.textContent = '';
-        chartAngle.update();
-        chartVelocity.update();
-        startTime = null;
-        statusDiv.textContent = "Chart reset and zeroed on sensor.";
-    });
+    }
 
+    // Clear all data
+    if (chartAngle) {
+        chartAngle.data.labels = [];
+        chartAngle.data.datasets.forEach(ds => { ds.data = []; });
+        chartAngle.reset();           
+        chartAngle.update('none');    
+    }
+
+    if (chartVelocity) {
+        chartVelocity.data.labels = [];
+        chartVelocity.data.datasets.forEach(ds => { ds.data = []; });
+        chartVelocity.reset();
+        chartVelocity.update('none');
+    }
+
+    // Reset application state
+    allData = [];
+    selectedPointsAngle = [];
+    selectedPointsVelocity = [];
+    startTime = null;
+    lastSmoothedPosition = 0;
+    window.isStreaming = false;
+
+    if (typeof clearHighlightAngle     === 'function') clearHighlightAngle();
+    if (typeof clearHighlightVelocity  === 'function') clearHighlightVelocity();
+    if (typeof updateAnnotationsAngle  === 'function') updateAnnotationsAngle();
+    if (typeof updateAnnotationsVelocity === 'function') updateAnnotationsVelocity();
+
+    // Clear calculation displays
+    if (calculationResultAngleDiv)    calculationResultAngleDiv.textContent = '';
+    if (calculationResultVelocityDiv) calculationResultVelocityDiv.textContent = '';
+
+    // UI feedback
+    if (statusDiv) {
+        statusDiv.textContent = window.currentSensor === 'ultrasonic'
+            ? "Ultrasonic chart & data reset"
+            : "Chart reset and sensor zeroed";
+    }
+
+    console.log("Reseted :", window.currentSensor || "unknown");
+});
     if (toggleModeBtn) toggleModeBtn.addEventListener("click", () => {
         activeSingle = activeSingle === "angle" ? "velocity" : "angle";
         toggleModeBtn.textContent = `Switch to ${activeSingle === "angle" ? "Velocity" : "Angle"}`;
@@ -357,7 +407,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (importCsvInput) importCsvInput.addEventListener("change", handleCsvImport);
     if (importCsvBtn) importCsvBtn.addEventListener("click", () => importCsvInput.click());
 
-    // handleCsvImport 
+    // handleCsvImport
     function handleCsvImport(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -365,7 +415,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const reader = new FileReader();
         reader.onload = (e) => {
             const csvData = e.target.result;
-            const lines = csvData.split("\\n").slice(1); 
+            const lines = csvData.split("\n").slice(1); 
 
             allData = [];
             lines.forEach(line => {
