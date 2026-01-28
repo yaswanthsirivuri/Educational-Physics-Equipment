@@ -1,5 +1,4 @@
 // charting
-// only rotary sensor compatible at the moment, will add others later
 // https://www.chartjs.org/docs/latest
 // filling modes is under area graph not line
 // https://developer.mozilla.org/en-US/docs/Web/API/Blob
@@ -11,181 +10,64 @@
 document.addEventListener("DOMContentLoaded", () => {
     console.log("Charting.js initialized");
 
-    /**
-     * Canvas rendering context (angle)
-     * @type {CanvasRenderingContext2D}
-     */
-    const ctxAngle = document.getElementById("sensorChartAngle").getContext("2d");
+    const ctxAngle    = document.getElementById("sensorChartAngle")?.getContext("2d");
+    const ctxVelocity = document.getElementById("sensorChartVelocity")?.getContext("2d");
 
-    /**
-     * Canvas rendering context (velocity)
-     * @type {CanvasRenderingContext2D}
-     */
-    const ctxVelocity = document.getElementById("sensorChartVelocity").getContext("2d");
-
-    /**
-     * display BLE status
-     * @type {HTMLElement|null}
-     */
-    const statusDiv = document.getElementById("data-rotary-BLE");
-
-    /**
-    * Start button 
-    * @type {HTMLElement|null}
-     */
-    const startBtn = document.getElementById("startButton");
-
-    /**
-     * Stop button 
-     * @type {HTMLElement|null}
-     */
-    const stopBtn = document.getElementById("stopButton");
-
-    /**
-     * Reset button 
-     * @type {HTMLElement|null}
-     */
-    const resetBtn = document.getElementById("resetButton");
-
-    /**
-     * Toggle mode button
-     * @type {HTMLElement|null}
-     */
-    const toggleModeBtn = document.getElementById("toggleModeButton");
-
-    /**
-     * two charts mode button
-     * @type {HTMLElement|null}
-     */
-    const dualModeBtn = document.getElementById("dualModeButton");
-
-    /**
-     * Calculate delta button for angle
-     * @type {HTMLElement|null}
-     */
-    const calculateDeltaAngleBtn = document.getElementById("calculateDeltaAngle");
-
-    /**
-     * Calculate area button for angle
-     * @type {HTMLElement|null}
-     */
-    const calculateAreaAngleBtn = document.getElementById("calculateAreaAngle");
-
-    /**
-     * Calculate delta button for velocity
-     * @type {HTMLElement|null}
-     */
-    const calculateDeltaVelocityBtn = document.getElementById("calculateDeltaVelocity");
-
-    /**
-     * Calculate area button for velocity
-     * @type {HTMLElement|null}
-     */
-    const calculateAreaVelocityBtn = document.getElementById("calculateAreaVelocity");
-
-    /**
-     * Calculation for angle
-     * @type {HTMLElement|null}
-     */
-    const calculationResultAngleDiv = document.getElementById("calculationResultAngle");
-
-    /**
-     * Calculation for velocity
-     * @type {HTMLElement|null}
-     */
+    const statusDiv                    = document.getElementById("data-rotary-BLE");
+    const startBtn                     = document.getElementById("startButton");
+    const stopBtn                      = document.getElementById("stopButton");
+    const resetBtn                     = document.getElementById("resetButton");
+    const toggleModeBtn                = document.getElementById("toggleModeButton");
+    const dualModeBtn                  = document.getElementById("dualModeButton");
+    const calculateDeltaAngleBtn       = document.getElementById("calculateDeltaAngle");
+    const calculateAreaAngleBtn        = document.getElementById("calculateAreaAngle");
+    const calculateDeltaVelocityBtn    = document.getElementById("calculateDeltaVelocity");
+    const calculateAreaVelocityBtn     = document.getElementById("calculateAreaVelocity");
+    const calculationResultAngleDiv    = document.getElementById("calculationResultAngle");
     const calculationResultVelocityDiv = document.getElementById("calculationResultVelocity");
+    const bleButton                    = document.getElementById("button-rotary-BLE");
+    const saveCsvBtn                   = document.getElementById("saveCsvButton");
+    const importCsvInput               = document.getElementById("importCsvInput");
+    const importCsvBtn                 = document.getElementById("importCsvButton");
 
-    /**
-     * BLE button 
-     * @type {HTMLElement|null}
-     */
-    const bleButton = document.getElementById("button-rotary-BLE");
-
-    /**
-     * Save CSV button 
-     * @type {HTMLElement|null}
-     */
-    const saveCsvBtn = document.getElementById("saveCsvButton");
-
-    /**
-     * File input for importing data
-     * @type {HTMLInputElement|null}
-     */
-    const importCsvInput = document.getElementById("importCsvInput");
-
-    /**
-     * Button for CSV file import
-     * @type {HTMLElement|null}
-     */
-    const importCsvBtn = document.getElementById("importCsvButton");
-
-    /**
-     * chart mode flag 
-     * @type {boolean}
-     */
-    let isDual = false;
-
-    /**
-     * Active chart in single mode
-     * @type {string}
-     */
-    let activeSingle = "angle";
-
-    /**
-     * Array to store indices of selected points chart
-     * @type {number[]}
-     */
-    let selectedPointsAngle = [];
-
-    /**
-     * Array to store indices of selected points on the velocity chart
-     * @type {number[]}
-     */
+    let isDual          = false;
+    let activeSingle    = "angle";
+    let selectedPointsAngle    = [];
     let selectedPointsVelocity = [];
+    let allData         = [];
+    let startTime       = null;
+    let isStreaming     = false;
 
-    /**
-     * Array to store data points 
-     * @type {Object[]}
-     */
-    let allData = []; // Store data
+    let POSITION_LABEL  = "Rotary Angle (radians)";
+    let VELOCITY_LABEL  = "Rotary Angular Velocity (rad/s)";
 
-    /**
-     * Label for the position dataset
-     * @type {string}
-     */
-    let POSITION_LABEL = "Rotary Angle (radians)";
+    // Ultrasonic outlier rejection
+    let lastGoodPosition = 0;
+    const OUTLIER_THRESHOLD = 150; 
 
-    /**
-     * Label for the velocity dataset.
-     * @type {string}
-     */
-    let VELOCITY_LABEL = "Rotary Angular Velocity (rad/s)";
-
-    // register annotation plugin
-    /**
-     * Chart.js annotation plugin 
-     * @type {Object|null}
-     */
-    const annotationPlugin =
-        window.chartjsPluginAnnotation ||
-        window['chartjs-plugin-annotation'] ||
-        window.chartjs_plugin_annotation ||
-        window.ChartAnnotation ||
-        window.annotationPlugin ||
-        null;
-
-    if (annotationPlugin) {
-        try {
-            Chart.register(annotationPlugin);
-            console.log("Annotation plugin registered.");
-        } catch (e) {
-            console.warn("Failed to register annotation plugin:", e);
-        }
-    } else {
-        console.warn("Annotation plugin not found.");
+    // Register plugins
+    if (window['chartjs-plugin-annotation']) {
+        Chart.register(window['chartjs-plugin-annotation']);
     }
 
-    let chartAngle = new Chart(ctxAngle, {
+    // Smoothing default
+    let velocitySmoothingFactor = 0.18;  
+
+    // dropdown listener 
+    document.getElementById('velocitySmoothing')?.addEventListener('change', (e) => {
+        velocitySmoothingFactor = parseFloat(e.target.value);
+        const statusEl = document.getElementById('smoothingStatus');
+        if (statusEl) {
+            statusEl.textContent = velocitySmoothingFactor > 0 
+                ? `(active: ${velocitySmoothingFactor})` 
+                : '(disabled)';
+            statusEl.style.color = velocitySmoothingFactor > 0 ? '#2c7' : '#c44';
+        }
+        console.log(`Velocity smoothing changed to: ${velocitySmoothingFactor}`);
+    });
+
+    // Create charts
+    const chartAngle = new Chart(ctxAngle, {
         type: 'line',
         data: {
             labels: [],
@@ -193,18 +75,31 @@ document.addEventListener("DOMContentLoaded", () => {
                 label: POSITION_LABEL,
                 data: [],
                 borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1
+                tension: 0.1,
+                pointBackgroundColor: []
             }]
         },
         options: {
             scales: {
                 x: { title: { display: true, text: 'Time (s)' } },
                 y: { title: { display: true, text: POSITION_LABEL } }
+            },
+            onClick: (e) => {
+                const points = chartAngle.getElementsAtEventForMode(e, 'nearest', { intersect: true }, true);
+                if (points.length > 0) {
+                    const idx = points[0].index;
+                    if (!selectedPointsAngle.includes(idx)) {
+                        selectedPointsAngle.push(idx);
+                        chartAngle.data.datasets[0].pointBackgroundColor[idx] = 'red';
+                        chartAngle.update();
+                    }
+                    calculationResultAngleDiv.textContent = `Selected point ${idx + 1}  (t = ${chartAngle.data.labels[idx]} s)`;
+                }
             }
         }
     });
 
-    let chartVelocity = new Chart(ctxVelocity, {
+    const chartVelocity = new Chart(ctxVelocity, {
         type: 'line',
         data: {
             labels: [],
@@ -212,27 +107,29 @@ document.addEventListener("DOMContentLoaded", () => {
                 label: VELOCITY_LABEL,
                 data: [],
                 borderColor: 'rgb(153, 102, 255)',
-                tension: 0.1
+                tension: 0.1,
+                pointBackgroundColor: []
             }]
         },
         options: {
             scales: {
                 x: { title: { display: true, text: 'Time (s)' } },
                 y: { title: { display: true, text: VELOCITY_LABEL } }
+            },
+            onClick: (e) => {
+                const points = chartVelocity.getElementsAtEventForMode(e, 'nearest', { intersect: true }, true);
+                if (points.length > 0) {
+                    const idx = points[0].index;
+                    if (!selectedPointsVelocity.includes(idx)) {
+                        selectedPointsVelocity.push(idx);
+                        chartVelocity.data.datasets[0].pointBackgroundColor[idx] = 'red';
+                        chartVelocity.update();
+                    }
+                    calculationResultVelocityDiv.textContent = `Selected point ${idx + 1}  (t = ${chartVelocity.data.labels[idx]} s)`;
+                }
             }
         }
     });
-
-    // Add isStreaming flag
-    window.isStreaming = false;
-
-    // Add startTime
-    let startTime = null;
-
-    // Smoothing variables for ultrasonic
-    let lastSmoothedPosition = 0;
-    const ALPHA = 0.3; // EMA alpha (0-1); higher = more responsive 
-    const OUTLIER_THRESHOLD = 500; // mm; max allowed jump from last value
 
     // Function to update labels based on sensor
     window.updateChartLabels = function() {
@@ -251,16 +148,16 @@ document.addEventListener("DOMContentLoaded", () => {
         chartVelocity.update();
     };
 
-    // Assumed addDataToChart function with modifications
+    // Add data to chart 
     window.addDataToChart = function(jsonObj) {
-        if (!window.isStreaming) return;
+        if (!isStreaming) return;
 
         const now = Date.now();
         if (startTime === null) startTime = now;
 
         const time = (now - startTime) / 1000; // time in seconds
 
-        let position, velocity, count = 0;
+        let position, velocity = 0, count = 0;
 
         if (jsonObj.angle !== undefined) {
             position = jsonObj.angle;
@@ -268,29 +165,22 @@ document.addEventListener("DOMContentLoaded", () => {
             count = jsonObj.count || 0;
         } else if (jsonObj.distance !== undefined) {
             position = jsonObj.distance;
-            // smoothing and outlier rejection for ultrasonic
+
+            // outlier rejection
             if (window.currentSensor === 'ultrasonic') {
-                if (allData.length === 0) {
-                    lastSmoothedPosition = position; 
-                } else {
-                    const delta = Math.abs(position - lastSmoothedPosition);
+                if (allData.length > 0) {
+                    const delta = Math.abs(position - lastGoodPosition);
                     if (delta > OUTLIER_THRESHOLD) {
-                        // Reject outlier use last smoothed
-                        position = lastSmoothedPosition;
-                    } else {
-                        // Apply ema smoothing
-                        position = ALPHA * position + (1 - ALPHA) * lastSmoothedPosition;
+                        position = lastGoodPosition; // reject outlier
                     }
-                    lastSmoothedPosition = position;
                 }
+                lastGoodPosition = position; // update reference
             }
-            // Compute velocity
+            // Compute velocity from adjusted position
             if (allData.length > 0) {
                 const last = allData[allData.length - 1];
                 const dt = time - last.time;
                 velocity = dt > 0 ? (position - last.position) / dt : 0;
-            } else {
-                velocity = 0;
             }
         } else {
             return;
@@ -307,75 +197,63 @@ document.addEventListener("DOMContentLoaded", () => {
         chartVelocity.update();
     };
 
-    // Modify button listeners to handle sensor type
+    // Button listeners
     if (startBtn) startBtn.addEventListener("click", async () => {
         if (window.currentSensor === 'rotary') {
-            await sendCommand("START");
+            await window.sendCommand?.("START");
         }
-        window.isStreaming = true;
-        startTime = null; // Reset time on start
+        isStreaming = true;
+        startTime = null;
         statusDiv.textContent = "Streaming started.";
     });
 
     if (stopBtn) stopBtn.addEventListener("click", async () => {
         if (window.currentSensor === 'rotary') {
-            await sendCommand("STOP");
+            await window.sendCommand?.("STOP");
         }
-        window.isStreaming = false;
+        isStreaming = false;
         statusDiv.textContent = "Streaming stopped.";
     });
 
     if (resetBtn) resetBtn.addEventListener("click", async () => {
-    // send hardware reset for sensors that support it, temp fix
-    if (window.currentSensor === 'rotary') {
-        try {
-            await sendCommand("RESET");
-        } catch (err) {
-            console.warn("Failed to send RESET command:", err);
+        if (window.currentSensor === 'rotary') {
+            await window.sendCommand?.("RESET");
         }
-    }
 
-    // Clear all data
-    if (chartAngle) {
         chartAngle.data.labels = [];
-        chartAngle.data.datasets.forEach(ds => { ds.data = []; });
-        chartAngle.reset();           
-        chartAngle.update('none');    
-    }
+        chartAngle.data.datasets[0].data = [];
+        chartAngle.data.datasets[0].pointBackgroundColor = [];
+        chartAngle.reset();
+        chartAngle.update('none');
 
-    if (chartVelocity) {
         chartVelocity.data.labels = [];
-        chartVelocity.data.datasets.forEach(ds => { ds.data = []; });
+        chartVelocity.data.datasets[0].data = [];
+        chartVelocity.data.datasets[0].pointBackgroundColor = [];
         chartVelocity.reset();
         chartVelocity.update('none');
-    }
 
-    // Reset application state
-    allData = [];
-    selectedPointsAngle = [];
-    selectedPointsVelocity = [];
-    startTime = null;
-    lastSmoothedPosition = 0;
-    window.isStreaming = false;
+        allData = [];
+        selectedPointsAngle = [];
+        selectedPointsVelocity = [];
+        startTime = null;
+        lastGoodPosition = 0;
+        isStreaming = false;
 
-    if (typeof clearHighlightAngle     === 'function') clearHighlightAngle();
-    if (typeof clearHighlightVelocity  === 'function') clearHighlightVelocity();
-    if (typeof updateAnnotationsAngle  === 'function') updateAnnotationsAngle();
-    if (typeof updateAnnotationsVelocity === 'function') updateAnnotationsVelocity();
+        if (typeof clearHighlightAngle === 'function')     clearHighlightAngle();
+        if (typeof clearHighlightVelocity === 'function')  clearHighlightVelocity();
+        if (typeof updateAnnotationsAngle === 'function')  updateAnnotationsAngle();
+        if (typeof updateAnnotationsVelocity === 'function') updateAnnotationsVelocity();
 
-    // Clear calculation displays
-    if (calculationResultAngleDiv)    calculationResultAngleDiv.textContent = '';
-    if (calculationResultVelocityDiv) calculationResultVelocityDiv.textContent = '';
+        calculationResultAngleDiv.textContent = '';
+        calculationResultVelocityDiv.textContent = '';
 
-    // UI feedback
-    if (statusDiv) {
         statusDiv.textContent = window.currentSensor === 'ultrasonic'
             ? "Ultrasonic chart & data reset"
             : "Chart reset and sensor zeroed";
-    }
 
-    console.log("Reseted :", window.currentSensor || "unknown");
-});
+        console.log("Reseted :", window.currentSensor || "unknown");
+    });
+
     if (toggleModeBtn) toggleModeBtn.addEventListener("click", () => {
         activeSingle = activeSingle === "angle" ? "velocity" : "angle";
         toggleModeBtn.textContent = `Switch to ${activeSingle === "angle" ? "Velocity" : "Angle"}`;
@@ -399,74 +277,167 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    if (calculateDeltaAngleBtn) calculateDeltaAngleBtn.addEventListener("click", calculateDeltaAngle);
-    if (calculateAreaAngleBtn) calculateAreaAngleBtn.addEventListener("click", calculateAreaAngle);
+    // Calculation buttons
+    if (calculateDeltaAngleBtn)    calculateDeltaAngleBtn.addEventListener("click", calculateDeltaAngle);
+    if (calculateAreaAngleBtn)     calculateAreaAngleBtn.addEventListener("click", calculateAreaAngle);
     if (calculateDeltaVelocityBtn) calculateDeltaVelocityBtn.addEventListener("click", calculateDeltaVelocity);
-    if (calculateAreaVelocityBtn) calculateAreaVelocityBtn.addEventListener("click", calculateAreaVelocity);
-    if (saveCsvBtn) saveCsvBtn.addEventListener("click", saveAsCsv);
-    if (importCsvInput) importCsvInput.addEventListener("change", handleCsvImport);
-    if (importCsvBtn) importCsvBtn.addEventListener("click", () => importCsvInput.click());
+    if (calculateAreaVelocityBtn)  calculateAreaVelocityBtn.addEventListener("click", calculateAreaVelocity);
 
-    // handleCsvImport
+    if (saveCsvBtn)    saveCsvBtn.addEventListener("click", saveAsCsv);
+    if (importCsvInput) importCsvInput.addEventListener("change", handleCsvImport);
+    if (importCsvBtn)  importCsvBtn.addEventListener("click", () => importCsvInput.click());
+
+    document.getElementById('reapplySmoothing')?.addEventListener('click', () => {
+        if (allData.length < 2) {
+            alert("Need at least 2 points to re-apply smoothing.");
+            return;
+        }
+
+        // Re-compute smoothed velocities 
+        for (let i = 1; i < allData.length; i++) {
+            const current = allData[i];
+            const prev = allData[i - 1];
+            let smoothedV = current.velocity; // start with original
+
+            // Apply smoothing 
+            if (velocitySmoothingFactor > 0) {
+                smoothedV = velocitySmoothingFactor * current.velocity + 
+                            (1 - velocitySmoothingFactor) * prev.velocity;
+            }
+
+            // Update stored and plotted velocity
+            current.velocity = smoothedV;
+            chartVelocity.data.datasets[0].data[i] = smoothedV;
+        }
+
+        chartVelocity.update();
+        console.log("Re-applied velocity smoothing to existing data");
+        document.getElementById('smoothingStatus').textContent += ' (re-applied)';
+    });
+
+    // Calculation functions
+    function calculateDeltaAngle() {
+        if (selectedPointsAngle.length !== 2) {
+            calculationResultAngleDiv.textContent = "Please select exactly 2 points on the position chart.";
+            return;
+        }
+        const [i1, i2] = selectedPointsAngle.sort((a,b)=>a-b);
+        const y1 = chartAngle.data.datasets[0].data[i1];
+        const y2 = chartAngle.data.datasets[0].data[i2];
+        const delta = y2 - y1;
+        const dt = parseFloat(chartAngle.data.labels[i2]) - parseFloat(chartAngle.data.labels[i1]);
+        let msg = `Δ = ${delta.toFixed(3)} ${POSITION_LABEL.split('(')[0].trim()}`;
+        if (dt > 0) msg += `  (avg rate: ${(delta/dt).toFixed(3)} /s)`;
+        calculationResultAngleDiv.textContent = msg;
+    }
+
+    function calculateDeltaVelocity() {
+        if (selectedPointsVelocity.length !== 2) {
+            calculationResultVelocityDiv.textContent = "Please select exactly 2 points on the velocity chart.";
+            return;
+        }
+        const [i1, i2] = selectedPointsVelocity.sort((a,b)=>a-b);
+        const y1 = chartVelocity.data.datasets[0].data[i1];
+        const y2 = chartVelocity.data.datasets[0].data[i2];
+        const delta = y2 - y1;
+        const dt = parseFloat(chartVelocity.data.labels[i2]) - parseFloat(chartVelocity.data.labels[i1]);
+        let msg = `Δ = ${delta.toFixed(3)} ${VELOCITY_LABEL.split('(')[0].trim()}`;
+        if (dt > 0) msg += `  (avg accel: ${(delta/dt).toFixed(3)} /s²)`;
+        calculationResultVelocityDiv.textContent = msg;
+    }
+
+    function calculateAreaAngle() {
+        if (selectedPointsAngle.length !== 2) {
+            calculationResultAngleDiv.textContent = "Please select exactly 2 points on the position chart.";
+            return;
+        }
+        const [i1, i2] = selectedPointsAngle.sort((a,b)=>a-b);
+        let area = 0;
+        for (let i = i1; i < i2; i++) {
+            const t1 = parseFloat(chartAngle.data.labels[i]);
+            const t2 = parseFloat(chartAngle.data.labels[i+1]);
+            const y1 = chartAngle.data.datasets[0].data[i];
+            const y2 = chartAngle.data.datasets[0].data[i+1];
+            area += (y1 + y2) / 2 * (t2 - t1);
+        }
+        const unit = POSITION_LABEL.includes("mm") ? "mm" : "rad";
+        calculationResultAngleDiv.textContent = `Area ≈ ${area.toFixed(3)} ${unit}·s`;
+    }
+
+    function calculateAreaVelocity() {
+        if (selectedPointsVelocity.length !== 2) {
+            calculationResultVelocityDiv.textContent = "Please select exactly 2 points on the velocity chart.";
+            return;
+        }
+        const [i1, i2] = selectedPointsVelocity.sort((a,b)=>a-b);
+        let area = 0;
+        for (let i = i1; i < i2; i++) {
+            const t1 = parseFloat(chartVelocity.data.labels[i]);
+            const t2 = parseFloat(chartVelocity.data.labels[i+1]);
+            const y1 = chartVelocity.data.datasets[0].data[i];
+            const y2 = chartVelocity.data.datasets[0].data[i+1];
+            area += (y1 + y2) / 2 * (t2 - t1);
+        }
+        const unit = VELOCITY_LABEL.includes("mm") ? "mm" : "rad";
+        calculationResultVelocityDiv.textContent = `Displacement ≈ ${area.toFixed(3)} ${unit}`;
+    }
+
+    // CSV import 
     function handleCsvImport(event) {
         const file = event.target.files[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = (e) => {
-            const csvData = e.target.result;
-            const lines = csvData.split("\n").slice(1); 
-
+            const lines = e.target.result.split("\n").slice(1);
             allData = [];
             lines.forEach(line => {
                 if (!line.trim()) return;
-                const values = line.split(",");
-                const time = parseFloat(values[0]);
-                const position = parseFloat(values[1]); // was angle
-                const velocity = parseFloat(values[2]); // was angularVelocity
-                const count = values.length === 4 ? parseInt(values[3], 10) : 0;
-                if (isNaN(time) || isNaN(position) || isNaN(velocity) || (values.length === 4 && isNaN(count))) {
-                    console.warn("Invalid values in row:", line);
-                    return;
+                const [timeStr, posStr, velStr, countStr] = line.split(",");
+                const time = parseFloat(timeStr);
+                const position = parseFloat(posStr);
+                const velocity = parseFloat(velStr);
+                const count = parseInt(countStr || "0", 10);
+                if (!isNaN(time) && !isNaN(position) && !isNaN(velocity)) {
+                    allData.push({ time, position, velocity, count });
                 }
-                allData.push({ time, position, velocity, count });
             });
+            allData.sort((a,b) => a.time - b.time);
 
-            // Sort by time if needed
-            allData.sort((a, b) => a.time - b.time);
-
-            // Update charts with imported data
             chartAngle.data.labels = allData.map(d => d.time.toFixed(2));
             chartAngle.data.datasets[0].data = allData.map(d => d.position);
             chartVelocity.data.labels = allData.map(d => d.time.toFixed(2));
             chartVelocity.data.datasets[0].data = allData.map(d => d.velocity);
 
-            // Reset selections, highlights, annotations, and results
             selectedPointsAngle = [];
             selectedPointsVelocity = [];
-            clearHighlightAngle();
-            clearHighlightVelocity();
-            updateAnnotationsAngle();
-            updateAnnotationsVelocity();
+            chartAngle.data.datasets[0].pointBackgroundColor = [];
+            chartVelocity.data.datasets[0].pointBackgroundColor = [];
             calculationResultAngleDiv.textContent = '';
             calculationResultVelocityDiv.textContent = '';
 
             // Refresh charts
             chartAngle.update();
             chartVelocity.update();
-
-            console.log("CSV imported and plotted successfully");
-        };
-        reader.onerror = (e) => {
-            console.error("Error reading CSV:", e);
+            console.log("CSV imported");
         };
         reader.readAsText(file);
     }
 
-    // Assume other functions like saveAsCsv, calculateDeltaAngle, clearHighlightAngle, etc. are here (from original)
-
-    // BLE connect (original)
-    if (bleButton) bleButton.addEventListener("click", connectToESP32);
+    function saveAsCsv() {
+        if (allData.length === 0) {
+            alert("No data to save.");
+            return;
+        }
+        const csv = "time,position,velocity,count\n" +
+            allData.map(d => `${d.time.toFixed(3)},${d.position.toFixed(3)},${d.velocity.toFixed(3)},${d.count}`).join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "sensor_data.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+    }
 
     console.log("charting.js loaded");
 });

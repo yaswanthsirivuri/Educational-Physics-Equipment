@@ -55,6 +55,19 @@
             <button id="saveCsvButton">Save data (.csv)</button>
             <input type="file" id="importCsvInput" accept=".csv" style="display: none">
             <button id="importCsvButton">Import data (.csv)</button>
+            <div style="margin: 10px 0;">
+            <label for="velocitySmoothing">Velocity smoothing:</label>
+            <select id="velocitySmoothing">
+            <option value="0">None (raw after outliers)</option>
+            <option value="0.08">Very light (0.08)</option>
+            <option value="0.18" selected>Light (0.18) – recommended start</option>
+            <option value="0.30">Medium (0.30)</option>
+            <option value="0.50">Heavy (0.50)</option>
+    </select>
+    <span id="smoothingStatus" style="margin-left: 12px; font-size: 0.9em; color: #666;"></span>
+
+            <button id="reapplySmoothing">Re-apply current smoothing to existing data</button>
+</div>
         </div>
         <div class="chart-container" id="angleChartContainer">
             <canvas id="sensorChartAngle" width="900" height="350"></canvas>
