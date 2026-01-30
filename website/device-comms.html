@@ -14,7 +14,8 @@
             <button class="help-button" onclick="window.open('help.html', '_blank')">Help</button>
             <button id="toggleDarkModeButton">Switch to Dark Mode</button>
         </div>
-
+        <!---
+        commented out until there is something actually useful here
         <div class="sensor" id="light">
             <h2>Light Sensor</h2>
             <div class="status" id="data-light-serial">No USB device connected</div>
@@ -22,7 +23,7 @@
                 <button class="button" id="button-light-serial">Select USB Port</button>
             </div>
         </div>
-
+        --->
         <div class="sensor" id="rotary">
             <h2>Rotary Encoder</h2>
             <div class="status" id="data-rotary-serial">No USB device connected</div>
@@ -55,20 +56,23 @@
             <button id="saveCsvButton">Save data (.csv)</button>
             <input type="file" id="importCsvInput" accept=".csv" style="display: none">
             <button id="importCsvButton">Import data (.csv)</button>
-            <div style="margin: 10px 0;">
-            <label for="velocitySmoothing">Velocity smoothing:</label>
-            <select id="velocitySmoothing">
-            <option value="0">None (raw after outliers)</option>
-            <option value="0.08">Very light (0.08)</option>
-            <option value="0.18" selected>Light (0.18) – recommended start</option>
-            <option value="0.30">Medium (0.30)</option>
-            <option value="0.50">Heavy (0.50)</option>
-    </select>
-    <span id="smoothingStatus" style="margin-left: 12px; font-size: 0.9em; color: #666;"></span>
+            <button id="clearSelections">Clear Point Selections</button>
 
-            <button id="reapplySmoothing">Re-apply current smoothing to existing data</button>
-</div>
+            <div class="smoothing-control">
+                <label for="velocitySmoothing">Velocity smoothing:</label>
+                <select id="velocitySmoothing">
+                    <option value="0">None (raw after outliers)</option>
+                    <option value="0.08">Very light (0.08)</option>
+                    <option value="0.18" selected>Light (0.18) – recommended</option>
+                    <option value="0.30">Medium (0.30)</option>
+                    <option value="0.50">Heavy (0.50)</option>
+                </select>
+                <span id="smoothingStatus">(active: 0.18)</span>
+                <button id="reapplySmoothing">Apply smoothing</button>
+            </div>
+            
         </div>
+
         <div class="chart-container" id="angleChartContainer">
             <canvas id="sensorChartAngle" width="900" height="350"></canvas>
             <div class="controls">
@@ -77,6 +81,7 @@
             </div>
             <div class="status" id="calculationResultAngle"></div>
         </div>
+
         <div class="chart-container" id="velocityChartContainer" style="display: none;">
             <canvas id="sensorChartVelocity" width="900" height="350"></canvas>
             <div class="controls">
@@ -91,7 +96,6 @@
             const clickedButton = event.target;
             const pairId = clickedButton.getAttribute('data-pair');
             const pairedButton = pairId ? document.getElementById(pairId) : null;
-
             if (pairedButton) {
                 pairedButton.classList.add('hidden');
             }
@@ -133,7 +137,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
     <script src="charting.js"></script>
-    <script src="sensor-light.js"></script>
+    <!---<script src="sensor-light.js"></script> --->
     <script type="module" src="sensor-rotary.js"></script>
     <script src="sensor-ultrasonic.js"></script>
     <script src="device-comms.js"></script>

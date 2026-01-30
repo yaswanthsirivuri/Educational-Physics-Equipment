@@ -8,12 +8,14 @@
 // https://www.papaparse.com/
 
 document.addEventListener("DOMContentLoaded", () => {
-    console.log("Charting.js initialized");
+    console.log("Charting.js initialised");
 
     const ctxAngle    = document.getElementById("sensorChartAngle")?.getContext("2d");
     const ctxVelocity = document.getElementById("sensorChartVelocity")?.getContext("2d");
 
     const statusDiv                    = document.getElementById("data-rotary-BLE");
+    
+    // buttons and stuff
     const startBtn                     = document.getElementById("startButton");
     const stopBtn                      = document.getElementById("stopButton");
     const resetBtn                     = document.getElementById("resetButton");
@@ -25,11 +27,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const calculateAreaVelocityBtn     = document.getElementById("calculateAreaVelocity");
     const calculationResultAngleDiv    = document.getElementById("calculationResultAngle");
     const calculationResultVelocityDiv = document.getElementById("calculationResultVelocity");
-    const bleButton                    = document.getElementById("button-rotary-BLE");
+    const bleButton                    = document.getElementById("button-rotary-BLE"); //unused?
     const saveCsvBtn                   = document.getElementById("saveCsvButton");
     const importCsvInput               = document.getElementById("importCsvInput");
     const importCsvBtn                 = document.getElementById("importCsvButton");
+    
+    // Point selection 
+    const COLOR_ENDPOINT = 'red';
+    const COLOR_RANGE = '#ffcc00';     
+    const COLOR_NORMAL = null;
 
+    //misc
     let isDual          = false;
     let activeSingle    = "angle";
     let selectedPointsAngle    = [];
@@ -37,7 +45,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let allData         = [];
     let startTime       = null;
     let isStreaming     = false;
-
+    
+    // labels
     let POSITION_LABEL  = "Rotary Angle (radians)";
     let VELOCITY_LABEL  = "Rotary Angular Velocity (rad/s)";
 
@@ -84,18 +93,27 @@ document.addEventListener("DOMContentLoaded", () => {
                 x: { title: { display: true, text: 'Time (s)' } },
                 y: { title: { display: true, text: POSITION_LABEL } }
             },
-            onClick: (e) => {
-                const points = chartAngle.getElementsAtEventForMode(e, 'nearest', { intersect: true }, true);
-                if (points.length > 0) {
-                    const idx = points[0].index;
+            onClick: (event, elements) => {
+                if (elements.length === 0) return;
+                const idx = elements[0].index;
+
+                // If already have 2 points, replace the second one 
+                if (selectedPointsAngle.length === 2) {
+                    if (idx === selectedPointsAngle[0]) {
+                        selectedPointsAngle = []; // clicking first again clears
+                    } else {
+                        selectedPointsAngle[1] = idx; // replace end point
+                    }
+                } else {
+                    // Add new point 
                     if (!selectedPointsAngle.includes(idx)) {
                         selectedPointsAngle.push(idx);
-                        chartAngle.data.datasets[0].pointBackgroundColor[idx] = 'red';
-                        chartAngle.update();
                     }
-                    calculationResultAngleDiv.textContent = `Selected point ${idx + 1}  (t = ${chartAngle.data.labels[idx]} s)`;
                 }
-            }
+
+            updatePointHighlights(chartAngle, selectedPointsAngle);
+            updateCalculationResult(calculationResultAngleDiv, selectedPointsAngle, chartAngle, POSITION_LABEL);
+        },
         }
     });
 
@@ -116,18 +134,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 x: { title: { display: true, text: 'Time (s)' } },
                 y: { title: { display: true, text: VELOCITY_LABEL } }
             },
-            onClick: (e) => {
-                const points = chartVelocity.getElementsAtEventForMode(e, 'nearest', { intersect: true }, true);
-                if (points.length > 0) {
-                    const idx = points[0].index;
+            onClick: (event, elements) => {
+                if (elements.length === 0) return;
+                const idx = elements[0].index;
+
+                if (selectedPointsVelocity.length === 2) {
+                    if (idx === selectedPointsVelocity[0]) {
+                        selectedPointsVelocity = [];
+                    } else {
+                        selectedPointsVelocity[1] = idx;
+                    }
+                } else {
                     if (!selectedPointsVelocity.includes(idx)) {
                         selectedPointsVelocity.push(idx);
-                        chartVelocity.data.datasets[0].pointBackgroundColor[idx] = 'red';
-                        chartVelocity.update();
                     }
-                    calculationResultVelocityDiv.textContent = `Selected point ${idx + 1}  (t = ${chartVelocity.data.labels[idx]} s)`;
                 }
-            }
+
+            updatePointHighlights(chartVelocity, selectedPointsVelocity);
+            updateCalculationResult(calculationResultVelocityDiv, selectedPointsVelocity, chartVelocity, VELOCITY_LABEL);
+        },
         }
     });
 
@@ -192,7 +217,10 @@ document.addEventListener("DOMContentLoaded", () => {
         chartAngle.data.datasets[0].data.push(position);
         chartVelocity.data.labels.push(time.toFixed(2));
         chartVelocity.data.datasets[0].data.push(velocity);
-
+        
+        chartAngle.data.datasets[0].pointBackgroundColor = null;
+        chartVelocity.data.datasets[0].pointBackgroundColor = null;
+        
         chartAngle.update();
         chartVelocity.update();
     };
@@ -238,6 +266,8 @@ document.addEventListener("DOMContentLoaded", () => {
         startTime = null;
         lastGoodPosition = 0;
         isStreaming = false;
+        chartAngle.data.datasets[0].pointBackgroundColor = null;
+        chartVelocity.data.datasets[0].pointBackgroundColor = null;
 
         if (typeof clearHighlightAngle === 'function')     clearHighlightAngle();
         if (typeof clearHighlightVelocity === 'function')  clearHighlightVelocity();
@@ -289,7 +319,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById('reapplySmoothing')?.addEventListener('click', () => {
         if (allData.length < 2) {
-            alert("Need at least 2 points to re-apply smoothing.");
+            alert("Need at least 2 points to apply smoothing.");
             return;
         }
 
@@ -318,7 +348,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Calculation functions
     function calculateDeltaAngle() {
         if (selectedPointsAngle.length !== 2) {
-            calculationResultAngleDiv.textContent = "Please select exactly 2 points on the position chart.";
+            calculationResultAngleDiv.textContent = "Please select 2 points on the chart.";
             return;
         }
         const [i1, i2] = selectedPointsAngle.sort((a,b)=>a-b);
@@ -333,7 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function calculateDeltaVelocity() {
         if (selectedPointsVelocity.length !== 2) {
-            calculationResultVelocityDiv.textContent = "Please select exactly 2 points on the velocity chart.";
+            calculationResultVelocityDiv.textContent = "Please select 2 points on the chart.";
             return;
         }
         const [i1, i2] = selectedPointsVelocity.sort((a,b)=>a-b);
@@ -348,7 +378,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function calculateAreaAngle() {
         if (selectedPointsAngle.length !== 2) {
-            calculationResultAngleDiv.textContent = "Please select exactly 2 points on the position chart.";
+            calculationResultAngleDiv.textContent = "Please select 2 points on the chart.";
             return;
         }
         const [i1, i2] = selectedPointsAngle.sort((a,b)=>a-b);
@@ -366,7 +396,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function calculateAreaVelocity() {
         if (selectedPointsVelocity.length !== 2) {
-            calculationResultVelocityDiv.textContent = "Please select exactly 2 points on the velocity chart.";
+            calculationResultVelocityDiv.textContent = "Please select 2 points on the chart.";
             return;
         }
         const [i1, i2] = selectedPointsVelocity.sort((a,b)=>a-b);
@@ -379,7 +409,7 @@ document.addEventListener("DOMContentLoaded", () => {
             area += (y1 + y2) / 2 * (t2 - t1);
         }
         const unit = VELOCITY_LABEL.includes("mm") ? "mm" : "rad";
-        calculationResultVelocityDiv.textContent = `Displacement ≈ ${area.toFixed(3)} ${unit}`;
+        calculationResultVelocityDiv.textContent = `Displacement = ${area.toFixed(3)} ${unit}`;
     }
 
     // CSV import 
@@ -438,6 +468,92 @@ document.addEventListener("DOMContentLoaded", () => {
         a.click();
         URL.revokeObjectURL(url);
     }
+
+
+    // clear selections
+    document.getElementById('clearSelections')?.addEventListener('click', () => {
+    selectedPointsAngle = [];
+    selectedPointsVelocity = [];
+    chartAngle.data.datasets[0].pointBackgroundColor = [];
+    chartVelocity.data.datasets[0].pointBackgroundColor = [];
+    chartAngle.update();
+    chartVelocity.update();
+    calculationResultAngleDiv.textContent = '';
+    calculationResultVelocityDiv.textContent = 'Selections cleared.';
+});
+
+// Updates point colours based on selection 
+function updatePointHighlights(chart, selectedIndices) {
+    if (!chart?.data?.datasets?.[0]) {
+        console.warn("Chart or dataset not ready");
+        return;
+    }
+
+    const numPoints = chart.data.labels.length;
+    if (numPoints === 0) return;
+
+    chart.data.datasets[0].pointBackgroundColor = null;
+
+    // Create array matching data length
+    const colors = new Array(numPoints).fill(null);
+
+    if (selectedIndices.length >= 1) {
+        const idx = selectedIndices[0];
+        if (idx >= 0 && idx < numPoints) {
+            colors[idx] = COLOR_ENDPOINT;
+        }
+    }
+
+    if (selectedIndices.length === 2) {
+        let start = Math.min(selectedIndices[0], selectedIndices[1]);
+        let end   = Math.max(selectedIndices[0], selectedIndices[1]);
+
+        if (start < 0) start = 0;
+        if (end >= numPoints) end = numPoints - 1;
+
+        colors[start] = COLOR_ENDPOINT;
+        colors[end]   = COLOR_ENDPOINT;
+
+        // Range between the two points
+        for (let i = start + 1; i < end; i++) {
+            colors[i] = COLOR_RANGE;
+        }
+
+        // CLEAR ALL POINTS AFTER THE END POINT (not working, idk why)
+        for (let i = end + 1; i < numPoints; i++) {
+            colors[i] = null;
+        }
+    }
+
+    // Assign new array
+    chart.data.datasets[0].pointBackgroundColor = colors;
+
+    // Update 
+    chart.update('none');
+}
+
+// Update text below chart 
+function updateCalculationResult(resultDiv, selectedIndices, chart, label) {
+    if (selectedIndices.length === 0) {
+        resultDiv.textContent = '';
+        return;
+    }
+
+    if (selectedIndices.length === 1) {
+        const idx = selectedIndices[0];
+        resultDiv.textContent = `Selected first point ${idx + 1} (t = ${chart.data.labels[idx]} s)`;
+        return;
+    }
+
+    if (selectedIndices.length === 2) {
+        const [i1, i2] = selectedIndices.sort((a,b)=>a-b);
+        const t1 = parseFloat(chart.data.labels[i1]);
+        const t2 = parseFloat(chart.data.labels[i2]);
+        resultDiv.textContent = `Selected range: ${i1 + 1} to ${i2 + 1} (${(t2 - t1).toFixed(2)} s)`;
+    }
+}
+
+
 
     console.log("charting.js loaded");
 });
