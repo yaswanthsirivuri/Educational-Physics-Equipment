@@ -97,23 +97,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (elements.length === 0) return;
                 const idx = elements[0].index;
 
-                // If already have 2 points, replace the second one 
-                if (selectedPointsAngle.length === 2) {
-                    if (idx === selectedPointsAngle[0]) {
-                        selectedPointsAngle = []; // clicking first again clears
-                    } else {
-                        selectedPointsAngle[1] = idx; // replace end point
-                    }
-                } else {
-                    // Add new point 
+                // Selection logic 
+                if (selectedPointsAngle.length < 2) {
                     if (!selectedPointsAngle.includes(idx)) {
                         selectedPointsAngle.push(idx);
                     }
+                } else {
+                    selectedPointsAngle = [idx];
                 }
 
-            updatePointHighlights(chartAngle, selectedPointsAngle);
-            updateCalculationResult(calculationResultAngleDiv, selectedPointsAngle, chartAngle, POSITION_LABEL);
-        },
+                updatePointHighlights(chartAngle, selectedPointsAngle);
+                updateCalculationResult(calculationResultAngleDiv, selectedPointsAngle, chartAngle, POSITION_LABEL);
+            },
         }
     });
 
@@ -138,21 +133,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (elements.length === 0) return;
                 const idx = elements[0].index;
 
-                if (selectedPointsVelocity.length === 2) {
-                    if (idx === selectedPointsVelocity[0]) {
-                        selectedPointsVelocity = [];
-                    } else {
-                        selectedPointsVelocity[1] = idx;
-                    }
-                } else {
+                // Selection logic
+                if (selectedPointsVelocity.length < 2) {
                     if (!selectedPointsVelocity.includes(idx)) {
                         selectedPointsVelocity.push(idx);
                     }
+                } else {
+                    selectedPointsVelocity = [idx];
                 }
 
-            updatePointHighlights(chartVelocity, selectedPointsVelocity);
-            updateCalculationResult(calculationResultVelocityDiv, selectedPointsVelocity, chartVelocity, VELOCITY_LABEL);
-        },
+                updatePointHighlights(chartVelocity, selectedPointsVelocity);
+                updateCalculationResult(calculationResultVelocityDiv, selectedPointsVelocity, chartVelocity, VELOCITY_LABEL);
+            },
         }
     });
 
@@ -218,8 +210,12 @@ document.addEventListener("DOMContentLoaded", () => {
         chartVelocity.data.labels.push(time.toFixed(2));
         chartVelocity.data.datasets[0].data.push(velocity);
         
-        chartAngle.data.datasets[0].pointBackgroundColor = null;
-        chartVelocity.data.datasets[0].pointBackgroundColor = null;
+        if (selectedPointsAngle.length > 0) {
+            updatePointHighlights(chartAngle, selectedPointsAngle);
+        }
+        if (selectedPointsVelocity.length > 0) {
+            updatePointHighlights(chartVelocity, selectedPointsVelocity);
+        }
         
         chartAngle.update();
         chartVelocity.update();
@@ -266,13 +262,6 @@ document.addEventListener("DOMContentLoaded", () => {
         startTime = null;
         lastGoodPosition = 0;
         isStreaming = false;
-        chartAngle.data.datasets[0].pointBackgroundColor = null;
-        chartVelocity.data.datasets[0].pointBackgroundColor = null;
-
-        if (typeof clearHighlightAngle === 'function')     clearHighlightAngle();
-        if (typeof clearHighlightVelocity === 'function')  clearHighlightVelocity();
-        if (typeof updateAnnotationsAngle === 'function')  updateAnnotationsAngle();
-        if (typeof updateAnnotationsVelocity === 'function') updateAnnotationsVelocity();
 
         calculationResultAngleDiv.textContent = '';
         calculationResultVelocityDiv.textContent = '';
@@ -440,14 +429,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
             selectedPointsAngle = [];
             selectedPointsVelocity = [];
-            chartAngle.data.datasets[0].pointBackgroundColor = [];
-            chartVelocity.data.datasets[0].pointBackgroundColor = [];
+            
+            // Clear all highlights
+            updatePointHighlights(chartAngle, selectedPointsAngle);
+            updatePointHighlights(chartVelocity, selectedPointsVelocity);
+            
             calculationResultAngleDiv.textContent = '';
             calculationResultVelocityDiv.textContent = '';
 
-            // Refresh charts
-            chartAngle.update();
-            chartVelocity.update();
             console.log("CSV imported");
         };
         reader.readAsText(file);
@@ -472,15 +461,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // clear selections
     document.getElementById('clearSelections')?.addEventListener('click', () => {
-    selectedPointsAngle = [];
-    selectedPointsVelocity = [];
-    chartAngle.data.datasets[0].pointBackgroundColor = [];
-    chartVelocity.data.datasets[0].pointBackgroundColor = [];
-    chartAngle.update();
-    chartVelocity.update();
-    calculationResultAngleDiv.textContent = '';
-    calculationResultVelocityDiv.textContent = 'Selections cleared.';
-});
+        selectedPointsAngle = [];
+        selectedPointsVelocity = [];
+        
+        // clear all colors
+        updatePointHighlights(chartAngle, selectedPointsAngle);
+        updatePointHighlights(chartVelocity, selectedPointsVelocity);
+        
+        calculationResultAngleDiv.textContent = '';
+        calculationResultVelocityDiv.textContent = 'Selections cleared.';
+    });
 
 // Updates point colours based on selection 
 function updatePointHighlights(chart, selectedIndices) {
@@ -492,12 +482,9 @@ function updatePointHighlights(chart, selectedIndices) {
     const numPoints = chart.data.labels.length;
     if (numPoints === 0) return;
 
-    chart.data.datasets[0].pointBackgroundColor = null;
+    const colors = new Array(numPoints).fill(COLOR_NORMAL);
 
-    // Create array matching data length
-    const colors = new Array(numPoints).fill(null);
-
-    if (selectedIndices.length >= 1) {
+    if (selectedIndices.length === 1) {
         const idx = selectedIndices[0];
         if (idx >= 0 && idx < numPoints) {
             colors[idx] = COLOR_ENDPOINT;
@@ -505,30 +492,25 @@ function updatePointHighlights(chart, selectedIndices) {
     }
 
     if (selectedIndices.length === 2) {
-        let start = Math.min(selectedIndices[0], selectedIndices[1]);
-        let end   = Math.max(selectedIndices[0], selectedIndices[1]);
+        const start = Math.min(selectedIndices[0], selectedIndices[1]);
+        const end = Math.max(selectedIndices[0], selectedIndices[1]);
 
-        if (start < 0) start = 0;
-        if (end >= numPoints) end = numPoints - 1;
+        // Color both endpoints
+        if (start >= 0 && start < numPoints) {
+            colors[start] = COLOR_ENDPOINT;
+        }
+        if (end >= 0 && end < numPoints) {
+            colors[end] = COLOR_ENDPOINT;
+        }
 
-        colors[start] = COLOR_ENDPOINT;
-        colors[end]   = COLOR_ENDPOINT;
-
-        // Range between the two points
+        // Colour all points between the points
         for (let i = start + 1; i < end; i++) {
             colors[i] = COLOR_RANGE;
         }
-
-        // CLEAR ALL POINTS AFTER THE END POINT (not working, idk why)
-        for (let i = end + 1; i < numPoints; i++) {
-            colors[i] = null;
-        }
     }
 
-    // Assign new array
+    // Apply colours 
     chart.data.datasets[0].pointBackgroundColor = colors;
-
-    // Update 
     chart.update('none');
 }
 
